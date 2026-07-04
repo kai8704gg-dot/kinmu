@@ -8,33 +8,53 @@
   :root{
     --c-day:#e3f2fd; --c-long:#90caf9; --c-eve:#ffe0b2; --c-night:#d1c4e9; --c-short:#b2ebf2; --c-off:#c8e6c9;
     --c-leave:#eceff1; --c-bad:#e53935;
+    --pri:#2563eb; --pri-d:#1d4ed8; --ink:#1e293b; --muted:#64748b; --line:#e2e8f0; --bg:#f1f5f9;
   }
   *{box-sizing:border-box;}
   body{
     font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;
-    margin:0; background:#f5f6f8; color:#263238;
+    margin:0; background:var(--bg); color:var(--ink);
   }
   header{
-    background:#fff; border-bottom:1px solid #e0e0e0; padding:10px 16px;
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background:#fff; padding:10px 16px;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
     position:sticky; top:0; z-index:30;
+    box-shadow:0 1px 4px rgba(15,23,42,.08);
   }
-  header h1{font-size:18px; margin:0 8px 0 0;}
-  .month-nav{display:flex; align-items:center; gap:6px;}
-  .month-nav .label{font-size:16px; font-weight:bold; min-width:120px; text-align:center;}
+  header h1{font-size:17px; margin:0 8px 0 0; letter-spacing:.02em;}
+  .hspacer{margin-left:auto;}
+  .month-nav{display:flex; align-items:center; gap:4px; background:var(--bg); border-radius:10px; padding:3px 4px;}
+  .month-nav .label{font-size:15px; font-weight:bold; min-width:112px; text-align:center;}
+  .month-nav button{border:none; background:none; padding:4px 10px; border-radius:8px;}
   button{
-    font-family:inherit; font-size:13px; padding:6px 12px; border-radius:6px;
-    border:1px solid #b0bec5; background:#fff; cursor:pointer;
+    font-family:inherit; font-size:13px; padding:7px 13px; border-radius:9px;
+    border:1px solid #cbd5e1; background:#fff; cursor:pointer; color:var(--ink);
+    transition:background .15s, box-shadow .15s, transform .05s;
   }
-  button:hover{background:#eceff1;}
-  button.primary{background:#1976d2; border-color:#1976d2; color:#fff;}
-  button.primary:hover{background:#1565c0;}
-  button.danger{color:#c62828; border-color:#ef9a9a;}
-  #userChip{font-size:13px; color:#37474f; margin-left:auto;}
-  main{padding:12px 16px 60px;}
-  details, .panel{background:#fff; border:1px solid #e0e0e0; border-radius:8px; margin-bottom:10px; padding:8px 12px;}
+  button:hover{background:#f1f5f9;}
+  button:active{transform:translateY(1px);}
+  button.primary{background:var(--pri); border-color:var(--pri); color:#fff; box-shadow:0 1px 3px rgba(37,99,235,.35);}
+  button.primary:hover{background:var(--pri-d);}
+  button.danger{color:#c62828; border-color:#fca5a5;}
+  button.iconbtn{padding:7px 10px;}
+  #userChip{font-size:13px; color:var(--ink); font-weight:bold;}
+  main{padding:14px 16px 60px; max-width:1600px; margin:0 auto;}
+  details, .panel{background:#fff; border:none; border-radius:14px; margin-bottom:12px; padding:12px 16px; box-shadow:0 1px 4px rgba(15,23,42,.07);}
   details summary{cursor:pointer; font-weight:bold; font-size:14px;}
-  .panel h3{margin:4px 0 8px; font-size:14px;}
+  .panel h3{margin:2px 0 10px; font-size:15px;}
+  .tabs{display:flex; gap:8px; margin-bottom:12px;}
+  .tab{border-radius:999px; padding:7px 18px;}
+  .tab.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+  .rulecard{display:flex; gap:12px; align-items:flex-start; padding:11px 6px; border-bottom:1px solid var(--line);}
+  .rulecard:last-child{border-bottom:none;}
+  .rulecard input[type=checkbox]{width:17px; height:17px; margin-top:2px; accent-color:var(--pri);}
+  .rulecard .rname{font-weight:bold; font-size:13px;}
+  .rulecard .rdesc{font-size:12px; color:var(--muted); margin-top:2px; line-height:1.7;}
+  .rulecard .rtag{font-size:10px; background:#eef2ff; color:#4338ca; border-radius:4px; padding:1px 6px; margin-left:6px; vertical-align:1px;}
+  .rulecard.off .rname,.rulecard.off .rdesc{opacity:.45;}
+  .rulecard .crdel{border:none; background:none; color:#c62828; cursor:pointer; padding:2px 6px; margin-left:auto;}
+  .cfin{width:190px; font-size:12px; padding:5px 6px; border:1px solid #cbd5e1; border-radius:7px; font-family:inherit;}
+  .cfcopy{margin-left:2px;}
   .members{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; align-items:center;}
   .chip{display:flex; align-items:center; gap:3px; background:#f5f6f8; border:1px solid #cfd8dc; border-radius:6px; padding:4px 6px;}
   .chip input{width:74px; font-size:13px; border:1px solid #cfd8dc; border-radius:4px; padding:3px 5px; font-family:inherit;}
@@ -104,8 +124,8 @@
   }
   #cellMenu button:hover{background:#eceff1;}
   #cellMenu .sw2{width:16px; height:16px; border-radius:4px; border:1px solid rgba(0,0,0,.15); display:inline-block; flex:none;}
-  /* メンバーページ・説明書 */
-  #memberView,#manualView{display:none;}
+  /* メンバーページ・説明書・設定ページ */
+  #memberView,#manualView,#settingsView,#rulesView{display:none;}
   .mv-head{display:flex; align-items:center; gap:14px; margin-bottom:10px; flex-wrap:wrap;}
   .mv-head h2{margin:0; font-size:18px;}
   table.wcal{border-collapse:separate; border-spacing:4px; margin-top:8px;}
@@ -168,7 +188,7 @@
   #printTitle{display:none;}
   @media print{
     @page{size:A4 landscape; margin:8mm;}
-    header, details, .panel, #warnings, .legend, #memberView, #manualView, #cellMenu, .no-print{display:none !important;}
+    header, details, .panel, #warnings, .legend, #memberView, #manualView, #settingsView, #rulesView, #cellMenu, .no-print{display:none !important;}
     main{padding:0;}
     body{background:#fff;}
     #printTitle{display:block; font-size:16px; margin:0 0 6px;}
@@ -218,14 +238,16 @@
     <span class="label" id="monthLabel"></span>
     <button id="btnNext">▶</button>
   </div>
-  <button id="btnGen" class="primary">⚡ 自動作成</button>
+  <button id="btnGen" class="primary">⚡ 勤務表を自動作成</button>
   <button id="btnClear" class="danger">全消去</button>
   <button id="btnCsv">CSV出力</button>
-  <button id="btnPrint">印刷</button>
-  <button id="btnManual">📖 使い方</button>
+  <button id="btnPrint">🖨 印刷</button>
+  <span class="hspacer"></span>
   <span id="cloudChip" style="display:none;font-size:12px"></span>
   <span id="userChip"></span>
   <button id="btnMyPage">👤 マイページ</button>
+  <button id="btnManual" class="iconbtn" title="使い方">📖</button>
+  <button id="btnSettings" class="iconbtn" title="管理者設定" style="display:none">⚙</button>
   <button id="btnLogout">ログアウト</button>
 </header>
 <main>
@@ -237,63 +259,6 @@
     <div class="settings-row no-print" id="wishImportRow">
       <button id="btnWishImport">📥 希望ファイルを読み込み</button>
       <input type="file" id="wishFile" accept=".json" style="display:none">
-    </div>
-  </details>
-  <details id="settingsDetails">
-    <summary>⚙ 設定</summary>
-    <div class="settings-row">
-      <label>公休日数 <input type="number" id="setOff" min="0" max="20"></label>
-      <label>準夜・深夜の人数 <input type="number" id="setNight" min="1" max="10"></label>
-      <label>夜勤の上限/月 <input type="number" id="setCap" min="1" max="15"></label>
-      <label>期間の開始日 <input type="number" id="setStart" min="1" max="28"></label>
-    </div>
-    <div class="rules" id="rulesEl"></div>
-    <div id="ruleForm">
-      <div class="settings-row" style="margin-top:0">
-        <label>条件の種類 <select id="rfType"></select></label>
-      </div>
-      <div class="settings-row" id="rfParams"></div>
-      <div class="settings-row">
-        <button id="rfAdd" class="primary">この条件を追加</button>
-        <button id="rfCancel">キャンセル</button>
-        <span style="font-size:11px;color:#78909c">※ 追加した条件は警告チェックに使われます（自動作成は標準条件で組み立てます）</span>
-      </div>
-    </div>
-    <div class="settings-row">
-      <span style="font-size:13px">役職の色:</span>
-      <label>師長 <input type="color" id="col_chief"></label>
-      <label>副師長 <input type="color" id="col_deputy"></label>
-      <label>リーダー <input type="color" id="col_leader"></label>
-      <label>一般 <input type="color" id="col_staff"></label>
-      <label>新人 <input type="color" id="col_rookie"></label>
-      <button id="btnColReset">標準に戻す</button>
-    </div>
-    <div class="settings-row" id="adminPwRow">
-      <button id="btnAdminPw">🔑 管理者パスワードの変更</button>
-      <span id="adminPwInfo" style="font-size:12px;color:#546e7a"></span>
-      <button id="btnTotp"></button>
-      <span id="totpInfo" style="font-size:12px;color:#546e7a"></span>
-    </div>
-    <div id="cloudRow" style="display:none;margin-top:10px;padding:10px;border:1px solid #90caf9;border-radius:8px;background:#f5faff">
-      <b style="font-size:13px">☁ クラウド同期（全端末でデータを共有）</b>
-      <div class="info-line" id="cloudInfo" style="margin-top:4px"></div>
-      <div class="settings-row" style="margin-top:6px">
-        <label>apiKey <input type="text" id="cf_apiKey" style="width:230px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit"></label>
-        <label>authDomain <input type="text" id="cf_authDomain" style="width:200px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit"></label>
-        <label>projectId <input type="text" id="cf_projectId" style="width:150px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit"></label>
-        <label>病棟ID <input type="text" id="cf_wardId" style="width:150px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit" placeholder="例: 3fnaika-x8k2s"></label>
-      </div>
-      <div class="settings-row" style="margin-top:6px">
-        <button id="btnCloudSave" class="primary">保存して接続</button>
-        <button id="btnCloudLink">🔗 共有用リンクをコピー</button>
-        <button id="btnCloudOff" class="danger">同期を解除（この端末のみ）</button>
-        <span style="font-size:11px;color:#78909c">設定手順は「📖使い方」の「クラウド同期」を見てください</span>
-      </div>
-    </div>
-    <div class="settings-row">
-      <button id="btnExport">💾 データを書き出し</button>
-      <button id="btnImport">📂 データを読み込み</button>
-      <input type="file" id="importFile" accept=".json" style="display:none">
     </div>
   </details>
   <div class="legend">
@@ -347,6 +312,11 @@
   <div class="mv-head">
     <button id="btnManualBack">← 勤務表に戻る</button>
     <h2>📖 使い方</h2>
+  </div>
+  <div class="tabs" id="manualTabs">
+    <button class="tab" data-t="staff">一般職員向け</button>
+    <button class="tab" data-t="chief">師長向け</button>
+    <button class="tab" data-t="admin">管理者向け</button>
   </div>
   <div class="panel">
     <h3>ログインと権限</h3>
@@ -491,6 +461,96 @@
   <div class="panel">
     <h3>月をまたぐ夜勤について</h3>
     <p>期間の最終日の長日勤チームは、翌期間の初日に準夜へ入る想定です。翌期間を作成したら、初日の準夜・深夜メンバーを前期間の末尾に合わせて手直ししてください。</p>
+  </div>
+</div>
+
+<div id="settingsView">
+  <div class="mv-head">
+    <button id="btnSettingsBack">← 勤務表に戻る</button>
+    <h2>⚙ 管理者設定</h2>
+  </div>
+  <div class="panel">
+    <h3>📋 勤務条件</h3>
+    <div class="settings-row">
+      <label>公休日数/月 <input type="number" id="setOff" min="0" max="20"></label>
+      <label>準夜・深夜の人数 <input type="number" id="setNight" min="1" max="10"></label>
+      <label>夜勤の上限/月 <input type="number" id="setCap" min="1" max="15"></label>
+      <label>期間の開始日 <input type="number" id="setStart" min="1" max="28"></label>
+    </div>
+    <div class="settings-row">
+      <button id="btnRules" class="primary">✅ 条件チェックの一覧・編集</button>
+      <span id="rulesSummary" style="font-size:12px;color:#64748b"></span>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>🎨 表示設定（役職の色）</h3>
+    <div class="settings-row">
+      <label>師長 <input type="color" id="col_chief"></label>
+      <label>副師長 <input type="color" id="col_deputy"></label>
+      <label>リーダー <input type="color" id="col_leader"></label>
+      <label>一般 <input type="color" id="col_staff"></label>
+      <label>新人 <input type="color" id="col_rookie"></label>
+      <button id="btnColReset">標準に戻す</button>
+    </div>
+  </div>
+  <div class="panel" id="adminPwRow">
+    <h3>🔐 認証設定</h3>
+    <div class="settings-row">
+      <button id="btnAdminPw">🔑 管理者パスワードの変更</button>
+      <span id="adminPwInfo" style="font-size:12px;color:#64748b"></span>
+    </div>
+    <div class="settings-row">
+      <button id="btnTotp"></button>
+      <span id="totpInfo" style="font-size:12px;color:#64748b"></span>
+    </div>
+  </div>
+  <div class="panel" id="cloudRow">
+    <h3>☁ クラウド同期（全端末でデータを共有）</h3>
+    <div class="info-line" id="cloudInfo" style="margin-top:2px"></div>
+    <div class="settings-row">
+      <label>apiKey <input type="password" class="cfin" id="cf_apiKey"><button class="cfcopy iconbtn" data-f="cf_apiKey" title="コピー">📋</button></label>
+      <label>authDomain <input type="password" class="cfin" id="cf_authDomain"><button class="cfcopy iconbtn" data-f="cf_authDomain" title="コピー">📋</button></label>
+      <label>projectId <input type="password" class="cfin" id="cf_projectId"><button class="cfcopy iconbtn" data-f="cf_projectId" title="コピー">📋</button></label>
+      <label>病棟ID <input type="password" class="cfin" id="cf_wardId" placeholder="例: 3fnaika-x8k2s"><button class="cfcopy iconbtn" data-f="cf_wardId" title="コピー">📋</button></label>
+    </div>
+    <div class="settings-row">
+      <button id="btnCloudSave" class="primary">保存して接続</button>
+      <button id="btnCloudLink">🔗 共有用リンクをコピー</button>
+      <button id="btnCloudOff" class="danger">同期を解除（この端末のみ）</button>
+    </div>
+    <div class="info-line">値は伏せ字で表示されます（📋でコピーできます）。設定手順は「📖使い方」の「クラウド同期」を参照。</div>
+  </div>
+  <div class="panel" id="dataRow">
+    <h3>💾 データ管理</h3>
+    <div class="settings-row">
+      <button id="btnExport">📤 エクスポート（書き出し）</button>
+      <button id="btnImport">📥 インポート（読み込み）</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+    <div class="info-line">別のパソコンへの引き継ぎ・バックアップに使います。インポートすると現在の全データが置き換わります。</div>
+  </div>
+</div>
+
+<div id="rulesView">
+  <div class="mv-head">
+    <button id="btnRulesBack">← 管理者設定に戻る</button>
+    <h2>✅ 条件チェック</h2>
+  </div>
+  <div class="panel">
+    <div class="info-line" style="margin-top:0">勤務表がこれらの条件を満たしているか自動でチェックし、違反があれば警告します。スイッチをオフにした条件はチェックされません。</div>
+    <div id="rulesEl"></div>
+    <button id="btnAddRule" class="primary" style="margin-top:10px">＋ 条件を追加</button>
+    <div id="ruleForm">
+      <div class="settings-row" style="margin-top:0">
+        <label>条件の種類 <select id="rfType"></select></label>
+      </div>
+      <div class="settings-row" id="rfParams"></div>
+      <div class="settings-row">
+        <button id="rfAdd" class="primary">この条件を追加</button>
+        <button id="rfCancel">キャンセル</button>
+        <span style="font-size:11px;color:#78909c">※ 追加した条件は警告チェックに使われます（自動作成は標準条件で組み立てます）</span>
+      </div>
+    </div>
   </div>
 </div>
 </main>
@@ -1587,8 +1647,6 @@ function renderMembers(){
     html=state.members.map(function(m,i){
       return '<div class="chip">'
         +'<input type="checkbox" class="msel" data-mid="'+m.id+'"'+(selSet[m.id]?' checked':'')+' title="一括削除の選択">'
-        +'<button class="icon mup" data-mid="'+m.id+'" title="左へ"'+(i===0?' disabled':'')+'>◀</button>'
-        +'<button class="icon mdown" data-mid="'+m.id+'" title="右へ"'+(i===state.members.length-1?' disabled':'')+'>▶</button>'
         +'<input class="mname" data-mid="'+m.id+'" value="'+esc(m.name)+'" style="background:'+esc(rc[m.role]||'#fff')+'">'
         +'<select class="mrole" data-mid="'+m.id+'">'
         +'<option value="chief"'+(m.role==='chief'?' selected':'')+'>師長</option>'
@@ -1619,7 +1677,8 @@ function renderMembers(){
   var leadN=state.members.filter(function(m){return m.role==='leader'&&!isShort(m);}).length;
   var rec=recommendedInfo();
   document.getElementById('staffInfo').textContent=
-    '夜勤要員 '+poolN+'名（推奨 '+rec.pool+'名以上）／うちリーダー '+leadN+'名（推奨 '+rec.leaders+'名以上）';
+    '夜勤要員 '+poolN+'名（推奨 '+rec.pool+'名以上）／うちリーダー '+leadN+'名（推奨 '+rec.leaders+'名以上）'
+    +(editable()?' ／ 並び替えは勤務表の名前をドラッグ':'');
 }
 function nightSets(mid){
   var days=pdays(), jun=0;
@@ -1786,6 +1845,51 @@ function renderMemberPage(){
   document.getElementById('leaveList').innerHTML=lh||'<div class="info-line">登録された休暇期間はありません。</div>';
   document.getElementById('btnAddLeave').style.display=editable()?'':'none';
 }
+// 条件チェックの説明文（現在の設定値入り）
+function ruleDescr(key){
+  var s=state.settings;
+  switch(key){
+    case 'nightCount': return '準夜・深夜は、それぞれ毎日ちょうど'+s.nightSize+'名（新人を除く）。人数は勤務条件の「準夜・深夜の人数」で変更できます。';
+    case 'zet': return '準夜に入った人は、翌日かならず同じ人が深夜に入ります（ゼット勤務）。';
+    case 'offDays': return '公休は1人あたり月'+s.offDays+'日ちょうど。産休などの長期休暇がある人は、在籍日数に応じて自動調整されます。';
+    case 'chief': return '毎日、日勤帯に師長がいること。師長が休みの日は副師長がいること。';
+    case 'longNext': return '長日勤に入った人の翌日は、準夜か公休のみ。';
+    case 'leader': return '日勤・長日勤・準夜・深夜のそれぞれに、リーダー（師長・副師長も含む）が毎日1名以上いること。';
+    case 'nightCap': return '夜勤（準夜＋翌日深夜のセットで1回）は、1人あたり月'+s.nightCap+'回まで。';
+    case 'rookie': return '新人の夜勤は月1回だけ。新人が夜勤・長日勤に入る日は、通常の'+s.nightSize+'名＋新人1名の'+(s.nightSize+1)+'名体制にします。';
+    case 'parity': return '長日勤の回数と夜勤の回数が、1人ひとり同じ数になること（自動作成は「長日勤→準夜→深夜→休み」のセットで組みます）。';
+    case 'short': return '時短勤務に設定された人は、夜勤・長日勤に入りません。';
+  }
+  return '';
+}
+// 使い方ページ: 見出し→対象(a=管理者,c=師長,s=一般職員)
+var MANUAL_MAP={
+  'ログインと権限':'acs',
+  '基本の流れ':'ac',
+  '勤務の種類':'acs',
+  '勤務表の操作（師長・管理者）':'ac',
+  'マイページ（全員）':'acs',
+  '自動作成の3方式':'ac',
+  '個人ページの設定（師長・管理者）':'ac',
+  '条件（チェックする規則）':'ac',
+  '期間の開始日（締め日対応）':'ac',
+  'クラウド同期（全端末でデータを共有）':'a',
+  'スマートフォンでの利用':'acs',
+  'データの保存と引き継ぎ':'a',
+  '月をまたぐ夜勤について':'ac'
+};
+var manualTab='staff';
+function renderManual(){
+  document.querySelectorAll('#manualTabs .tab').forEach(function(t){
+    t.classList.toggle('active',t.dataset.t===manualTab);
+  });
+  var code=manualTab==='admin'?'a':manualTab==='chief'?'c':'s';
+  document.querySelectorAll('#manualView .panel').forEach(function(p){
+    var h=p.querySelector('h3');
+    var m=MANUAL_MAP[h?h.textContent:'']||'acs';
+    p.style.display=m.indexOf(code)>=0?'':'none';
+  });
+}
 function renderAll(){
   // ログイン画面
   var loggedIn=!!loc.session;
@@ -1805,18 +1909,28 @@ function renderAll(){
   document.getElementById('setStart').value=state.settings.startDay;
   ROLE_KEYS.forEach(function(r){document.getElementById('col_'+r).value=state.settings.roleColors[r];});
   var ed=editable();
-  document.getElementById('rulesEl').innerHTML='<span style="font-size:13px;width:100%">条件チェック（外すと警告の対象外）:</span>'
-    +RULE_DEFS.map(function(r){
-      return '<span class="rrow"><label><input type="checkbox" class="rulechk" data-r="'+r[0]+'"'
-        +(state.settings.rules[r[0]]?' checked':'')+(ed?'':' disabled')+'> '+r[1]+'</label></span>';
+  var crs=state.settings.customRules||[];
+  var rulesOn=RULE_DEFS.filter(function(r){return state.settings.rules[r[0]];}).length
+    +crs.filter(function(r){return r.on;}).length;
+  document.getElementById('rulesSummary').textContent=
+    '現在 '+rulesOn+'件が有効（標準'+RULE_DEFS.length+'件＋追加'+crs.length+'件）';
+  document.getElementById('rulesEl').innerHTML=
+    RULE_DEFS.map(function(r){
+      var on=!!state.settings.rules[r[0]];
+      return '<div class="rulecard'+(on?'':' off')+'">'
+        +'<input type="checkbox" class="rulechk" data-r="'+r[0]+'"'+(on?' checked':'')+(ed?'':' disabled')+' title="チェックのオン／オフ">'
+        +'<div><span class="rname">'+r[1]+'</span><span class="rtag">標準</span>'
+        +'<div class="rdesc">'+ruleDescr(r[0])+'</div></div>'
+        +'</div>';
     }).join('')
-    +(state.settings.customRules||[]).map(function(r){
-      return '<span class="rrow"><label><input type="checkbox" class="rulechk" data-cr="'+r.id+'"'
-        +(r.on?' checked':'')+(ed?'':' disabled')+'> ✚'+esc(customLabel(r))+'</label>'
-        +(ed?'<button class="crdel" data-cr="'+r.id+'" title="この条件を削除">✕</button>':'')
-        +'</span>';
-    }).join('')
-    +(ed?'<button id="btnAddRule">＋ 条件を追加</button>':'');
+    +crs.map(function(r){
+      return '<div class="rulecard'+(r.on?'':' off')+'">'
+        +'<input type="checkbox" class="rulechk" data-cr="'+r.id+'"'+(r.on?' checked':'')+(ed?'':' disabled')+' title="チェックのオン／オフ">'
+        +'<div><span class="rname">'+esc(customLabel(r))+'</span><span class="rtag" style="background:#ecfdf5;color:#047857">追加</span>'
+        +'<div class="rdesc">「＋条件を追加」で作成した条件です。</div></div>'
+        +(ed?'<button class="crdel" data-cr="'+r.id+'">✕ 削除</button>':'')
+        +'</div>';
+    }).join('');
   // ユーザー表示
   var chip=document.getElementById('userChip');
   var my=document.getElementById('btnMyPage');
@@ -1832,7 +1946,8 @@ function renderAll(){
   }
   document.getElementById('btnGen').style.display=ed?'':'none';
   document.getElementById('btnClear').style.display=ed?'':'none';
-  document.getElementById('settingsDetails').style.display=ed?'':'none';
+  document.getElementById('btnSettings').style.display=ed?'':'none';
+  document.getElementById('dataRow').style.display=isAdmin()?'':'none';
   document.getElementById('wishImportRow').style.display=ed?'':'none';
   document.getElementById('adminPwRow').style.display=isAdmin()?'':'none';
   document.getElementById('adminPwInfo').textContent=state.adminPass?'設定済み':'未設定（必ず設定してください）';
@@ -1853,11 +1968,15 @@ function renderAll(){
   });
   ROLE_KEYS.forEach(function(r){document.getElementById('col_'+r).disabled=!ed;});
   // 表示切替
-  var isMember=loc.view!=='main'&&loc.view!=='manual'&&state.members.some(function(m){return m.id===loc.view;});
-  if(loc.view!=='manual'&&!isMember) loc.view='main';
+  var special={manual:1,settings:1,rules:1};
+  if((loc.view==='settings'||loc.view==='rules')&&!ed) loc.view='main';
+  var isMember=!special[loc.view]&&loc.view!=='main'&&state.members.some(function(m){return m.id===loc.view;});
+  if(!special[loc.view]&&loc.view!=='main'&&!isMember) loc.view='main';
   document.getElementById('mainView').style.display=loc.view==='main'?'':'none';
   document.getElementById('memberView').style.display=isMember?'block':'none';
   document.getElementById('manualView').style.display=loc.view==='manual'?'block':'none';
+  document.getElementById('settingsView').style.display=loc.view==='settings'?'block':'none';
+  document.getElementById('rulesView').style.display=loc.view==='rules'?'block':'none';
   if(loc.view==='main'){
     renderMembers();
     var issues=validate();
@@ -1865,6 +1984,8 @@ function renderAll(){
     renderWarnings(issues);
   }else if(isMember){
     renderMemberPage();
+  }else if(loc.view==='manual'){
+    renderManual();
   }
 }
 
@@ -2289,10 +2410,40 @@ document.getElementById('btnBack').addEventListener('click',function(){
   loc.view='main'; save(); renderAll();
 });
 document.getElementById('btnManual').addEventListener('click',function(){
+  manualTab=isAdmin()?'admin':(curMember()&&curMember().role==='chief')?'chief':'staff';
   loc.view='manual'; save(); renderAll();
 });
 document.getElementById('btnManualBack').addEventListener('click',function(){
   loc.view='main'; save(); renderAll();
+});
+document.getElementById('manualTabs').addEventListener('click',function(e){
+  var t=e.target.closest('.tab');
+  if(!t) return;
+  manualTab=t.dataset.t;
+  renderManual();
+});
+document.getElementById('btnSettings').addEventListener('click',function(){
+  if(!canEdit()) return;
+  loc.view='settings'; save(); renderAll();
+});
+document.getElementById('btnSettingsBack').addEventListener('click',function(){
+  loc.view='main'; save(); renderAll();
+});
+document.getElementById('btnRules').addEventListener('click',function(){
+  loc.view='rules'; save(); renderAll();
+});
+document.getElementById('btnRulesBack').addEventListener('click',function(){
+  loc.view='settings'; save(); renderAll();
+});
+document.querySelectorAll('.cfcopy').forEach(function(b){
+  b.addEventListener('click',function(){
+    var el=document.getElementById(b.dataset.f);
+    if(el&&el.value&&navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(el.value);
+      b.textContent='✔';
+      setTimeout(function(){b.textContent='📋';},1200);
+    }
+  });
 });
 document.getElementById('btnExport').addEventListener('click',exportData);
 document.getElementById('btnImport').addEventListener('click',function(){
@@ -2328,14 +2479,13 @@ document.getElementById('rulesEl').addEventListener('change',function(e){
   }
   save(); renderAll();
 });
+document.getElementById('btnAddRule').addEventListener('click',function(){
+  if(!canEdit()) return;
+  var f=document.getElementById('ruleForm');
+  f.style.display='block';
+  renderRuleForm();
+});
 document.getElementById('rulesEl').addEventListener('click',function(e){
-  if(e.target.id==='btnAddRule'){
-    if(!canEdit()) return;
-    var f=document.getElementById('ruleForm');
-    f.style.display='block';
-    renderRuleForm();
-    return;
-  }
   if(e.target.classList.contains('crdel')){
     if(!canEdit()) return;
     var id=e.target.dataset.cr;

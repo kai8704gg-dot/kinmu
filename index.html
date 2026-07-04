@@ -329,8 +329,10 @@
     <ul>
       <li><b>初回ログイン時にパスワードの設定が必須</b>です（パスワード欄を空のままログインすると設定画面が出ます）。</li>
       <li>パスワードは8文字以上で英字と数字を含むもの。推測されやすいもの・名前入りは使えません。</li>
-      <li>忘れた場合は、管理者が個人ページの「🔑パスワードをリセット」で未設定に戻せます（本人が次回に再設定）。</li>
-      <li><b>2段階認証（管理者・推奨）</b> — ⚙設定の「🛡2段階認証を有効にする」で、スマホの認証アプリ（Google認証システムなど）の6桁コードをログインに追加できます。</li>
+      <li>忘れた場合は、管理者にリセットを依頼してください（未設定に戻り、次回ログイン時に再設定します）。</li>
+      <li data-m="a"><b>2段階認証（管理者・推奨）</b> — ⚙設定の「🛡2段階認証を有効にする」で、スマホの認証アプリ（Google認証システムなど）の6桁コードをログインに追加できます。</li>
+      <li data-m="ac"><b>役職の変更</b>は師長・管理者のみ行えます。師長が0名になる変更・削除はできません（必ず1名以上）。</li>
+      <li data-m="a"><b>管理者パスワードを忘れた場合</b> — クラウド同期を使っていれば、Firebaseコンソール（Firestoreのデータ画面）から確認・再設定できます。詳細は「クラウド同期の設定手順」の困ったとき参照。</li>
     </ul>
   </div>
   <div class="panel">
@@ -387,7 +389,7 @@
     <ul>
       <li><b>時短勤務</b> — 「時短勤務にする」にチェックし、勤務時間を入力します。時短の人は夜勤・長日勤に入りません。</li>
       <li><b>長期休暇</b> — 産休・育休などの期間を登録すると、勤務表でグレー表示になり割り当てから外れます。公休の必要日数も在籍日数に合わせて自動調整されます。</li>
-      <li><b>パスワードのリセット</b> — 管理者はこのページから各メンバーのパスワードを再設定できます。</li>
+      <li data-m="a"><b>パスワードのリセット</b> — 管理者はこのページから各メンバーのパスワードを再設定できます。</li>
     </ul>
   </div>
   <div class="panel">
@@ -467,7 +469,7 @@
 <div id="settingsView">
   <div class="mv-head">
     <button id="btnSettingsBack">← 勤務表に戻る</button>
-    <h2>⚙ 管理者設定</h2>
+    <h2 id="settingsTitle">⚙ 管理者設定</h2>
   </div>
   <div class="panel">
     <h3>📋 勤務条件</h3>
@@ -1889,6 +1891,10 @@ function renderManual(){
     var m=MANUAL_MAP[h?h.textContent:'']||'acs';
     p.style.display=m.indexOf(code)>=0?'':'none';
   });
+  // 箇条書き単位の出し分け（data-m属性）
+  document.querySelectorAll('#manualView [data-m]').forEach(function(el){
+    el.style.display=el.dataset.m.indexOf(code)>=0?'':'none';
+  });
 }
 function renderAll(){
   // ログイン画面
@@ -1947,6 +1953,7 @@ function renderAll(){
   document.getElementById('btnGen').style.display=ed?'':'none';
   document.getElementById('btnClear').style.display=ed?'':'none';
   document.getElementById('btnSettings').style.display=ed?'':'none';
+  document.getElementById('settingsTitle').textContent=isAdmin()?'⚙ 管理者設定':'⚙ 設定（師長）';
   document.getElementById('dataRow').style.display=isAdmin()?'':'none';
   document.getElementById('wishImportRow').style.display=ed?'':'none';
   document.getElementById('adminPwRow').style.display=isAdmin()?'':'none';
@@ -2569,7 +2576,19 @@ membersEl.addEventListener('change',function(e){
   var m=state.members.filter(function(x){return x.id===mid;})[0];
   if(!m) return;
   if(e.target.classList.contains('mname')) m.name=e.target.value||'（無名）';
-  if(e.target.classList.contains('mrole')) m.role=e.target.value;
+  if(e.target.classList.contains('mrole')){
+    var newRole=e.target.value;
+    // 師長が0名になる変更は禁止
+    if(m.role==='chief'&&newRole!=='chief'
+       &&state.members.filter(function(x){return x.role==='chief';}).length<=1){
+      showModal('変更できません',
+        ['師長は必ず1名以上必要です。','先に他の人を師長に変更してから、この人の役職を変えてください。'],
+        [{label:'閉じる'}]);
+      renderAll();
+      return;
+    }
+    m.role=newRole;
+  }
   save(); renderAll();
 });
 membersEl.addEventListener('click',function(e){
@@ -2578,6 +2597,14 @@ membersEl.addEventListener('click',function(e){
     if(!canEdit()) return;
     var targets=state.members.filter(function(m){return selSet[m.id];});
     if(targets.length===0) return;
+    // 師長が0名になる一括削除は禁止
+    var chiefsLeft=state.members.filter(function(m){return m.role==='chief'&&!selSet[m.id];}).length;
+    if(chiefsLeft===0&&state.members.some(function(m){return m.role==='chief';})){
+      showModal('削除できません',
+        ['師長は必ず1名以上必要です。','師長を選択から外すか、先に他の人を師長に変更してください。'],
+        [{label:'閉じる'}]);
+      return;
+    }
     showModal('一括削除の確認',
       ['次の'+targets.length+'名を削除します: '+targets.map(function(m){return m.name;}).join('、'),
        '全期間の勤務データ・希望・休暇も消えます。'],
@@ -2607,16 +2634,15 @@ membersEl.addEventListener('click',function(e){
   if(!canEdit()) return;
   var idx=state.members.findIndex(function(x){return x.id===mid;});
   if(idx<0) return;
-  if(t.classList.contains('mup')&&idx>0){
-    var tmp=state.members[idx-1]; state.members[idx-1]=state.members[idx]; state.members[idx]=tmp;
-    save(); renderAll(); return;
-  }
-  if(t.classList.contains('mdown')&&idx<state.members.length-1){
-    var tmp2=state.members[idx+1]; state.members[idx+1]=state.members[idx]; state.members[idx]=tmp2;
-    save(); renderAll(); return;
-  }
   if(t.classList.contains('mdel')){
     var m=state.members[idx];
+    // 師長が0名になる削除は禁止
+    if(m.role==='chief'&&state.members.filter(function(x){return x.role==='chief';}).length<=1){
+      showModal('削除できません',
+        ['師長は必ず1名以上必要です。','先に他の人を師長に変更してから削除してください。'],
+        [{label:'閉じる'}]);
+      return;
+    }
     showModal('確認',[m.name+'さんを削除します。全期間の勤務データ・希望・休暇も消えます。'],
       [{label:'戻る'},{label:'削除する',primary:true,fn:function(){
         state.members=state.members.filter(function(x){return x.id!==mid;});

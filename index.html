@@ -1,0 +1,2227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>看護師勤務表メーカー</title>
+<style>
+  :root{
+    --c-day:#e3f2fd; --c-long:#90caf9; --c-eve:#ffe0b2; --c-night:#d1c4e9; --c-short:#b2ebf2; --c-off:#c8e6c9;
+    --c-leave:#eceff1; --c-bad:#e53935;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;
+    margin:0; background:#f5f6f8; color:#263238;
+  }
+  header{
+    background:#fff; border-bottom:1px solid #e0e0e0; padding:10px 16px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:30;
+  }
+  header h1{font-size:18px; margin:0 8px 0 0;}
+  .month-nav{display:flex; align-items:center; gap:6px;}
+  .month-nav .label{font-size:16px; font-weight:bold; min-width:120px; text-align:center;}
+  button{
+    font-family:inherit; font-size:13px; padding:6px 12px; border-radius:6px;
+    border:1px solid #b0bec5; background:#fff; cursor:pointer;
+  }
+  button:hover{background:#eceff1;}
+  button.primary{background:#1976d2; border-color:#1976d2; color:#fff;}
+  button.primary:hover{background:#1565c0;}
+  button.danger{color:#c62828; border-color:#ef9a9a;}
+  #userChip{font-size:13px; color:#37474f; margin-left:auto;}
+  main{padding:12px 16px 60px;}
+  details, .panel{background:#fff; border:1px solid #e0e0e0; border-radius:8px; margin-bottom:10px; padding:8px 12px;}
+  details summary{cursor:pointer; font-weight:bold; font-size:14px;}
+  .panel h3{margin:4px 0 8px; font-size:14px;}
+  .members{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; align-items:center;}
+  .chip{display:flex; align-items:center; gap:3px; background:#f5f6f8; border:1px solid #cfd8dc; border-radius:6px; padding:4px 6px;}
+  .chip input{width:74px; font-size:13px; border:1px solid #cfd8dc; border-radius:4px; padding:3px 5px; font-family:inherit;}
+  .chip select{font-size:12px; border:1px solid #cfd8dc; border-radius:4px; padding:2px; font-family:inherit;}
+  .chip .icon{padding:1px 4px; border:none; background:none; color:#90a4ae; font-size:13px;}
+  .chip .icon:hover{color:#1565c0; background:none;}
+  .chip .mdel{padding:1px 5px; border:none; background:none; color:#90a4ae; font-size:15px;}
+  .chip .mdel:hover{color:#c62828; background:none;}
+  .info-line{font-size:12px; color:#546e7a; margin-top:8px; line-height:1.7;}
+  .settings-row{display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:13px; align-items:center;}
+  .settings-row label{display:flex; align-items:center; gap:6px;}
+  .settings-row input[type=number]{width:56px; font-size:13px; padding:3px 5px; border:1px solid #cfd8dc; border-radius:4px; font-family:inherit;}
+  .rules{display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:8px;}
+  .rules label{display:flex; align-items:center; gap:5px; font-size:12px; color:#37474f;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:#455a64; margin:6px 0 10px;}
+  .legend .sw{display:inline-block; width:14px; height:14px; border-radius:3px; vertical-align:-2px; margin-right:3px; border:1px solid rgba(0,0,0,.15);}
+  #warnings{margin:10px 0;}
+  .warn-box{background:#ffebee; border:1px solid #ef9a9a; border-radius:8px; padding:10px 14px; margin-bottom:8px;}
+  .warn-box h3{margin:0 0 6px; font-size:14px; color:#c62828;}
+  .warn-box ul{margin:0; padding-left:20px; font-size:13px; max-height:180px; overflow:auto;}
+  .ok-box{background:#e8f5e9; border:1px solid #a5d6a7; border-radius:8px; padding:10px 14px; font-size:13px; color:#2e7d32; margin-bottom:8px;}
+  .note-box{background:#e3f2fd; border:1px solid #90caf9; border-radius:8px; padding:10px 14px; margin-bottom:8px;}
+  .note-box h3{margin:0 0 6px; font-size:13px; color:#1565c0;}
+  .note-box ul{margin:0; padding-left:20px; font-size:12px; max-height:150px; overflow:auto;}
+  .empty-box{background:#eceff1; border:1px solid #cfd8dc; border-radius:8px; padding:10px 14px; font-size:13px; color:#546e7a; margin-bottom:8px;}
+  .grid-wrap{overflow:auto; max-height:70vh; background:#fff; border:1px solid #e0e0e0; border-radius:8px;}
+  table.grid{border-collapse:separate; border-spacing:0; font-size:12px;}
+  .grid th,.grid td{border-right:1px solid #e0e0e0; border-bottom:1px solid #e0e0e0; padding:0; text-align:center; white-space:nowrap;}
+  .grid thead th{position:sticky; top:0; background:#fafafa; z-index:10; padding:4px 3px; font-size:11px;}
+  .grid thead th.sun{color:#c62828;} .grid thead th.sat{color:#1565c0;}
+  .grid thead th span{font-weight:normal; font-size:10px;}
+  .sticky-col{position:sticky; left:0; background:#fff; z-index:5; text-align:left; padding:4px 8px; min-width:80px; border-right:2px solid #cfd8dc;}
+  .grid thead .sticky-col{z-index:15; background:#fafafa;}
+  td.mopen{cursor:pointer; color:#1565c0; text-decoration:underline dotted;}
+  td.mopen:hover{filter:brightness(.95);}
+  td.role{font-size:10px; color:#546e7a; padding:2px 4px;}
+  td.cell{
+    min-width:26px; width:26px; height:26px; cursor:pointer; user-select:none;
+    font-weight:bold; font-size:12px;
+  }
+  td.cell:hover{filter:brightness(.92);}
+  .s-day{background:var(--c-day);} .s-long{background:var(--c-long);}
+  .s-eve{background:var(--c-eve);} .s-night{background:var(--c-night);}
+  .s-short{background:var(--c-short);}
+  .s-off{background:var(--c-off); color:#2e7d32;}
+  td.cell.s-leave{background:var(--c-leave); color:#90a4ae; cursor:default;}
+  td.cell.wmatch{box-shadow:inset 0 -3px 0 0 #2e7d32;}
+  td.cell.wmiss{box-shadow:inset 0 -3px 0 0 #ef6c00;}
+  td.viol{outline:2px solid var(--c-bad); outline-offset:-2px;}
+  td.cnt,td.fcnt{padding:3px 6px; font-size:11px; color:#455a64; background:#fafafa;}
+  td.bad{color:#fff; background:var(--c-bad); font-weight:bold;}
+  .grid tfoot td{background:#fafafa;}
+  .grid tfoot .sticky-col{font-size:11px; color:#546e7a; background:#fafafa;}
+  td.mopen[draggable="true"]{cursor:grab;}
+  tr.drag-src{opacity:.45;}
+  tr.drop-above td{border-top:3px solid #1976d2;}
+  tr.drop-below td{border-bottom:3px solid #1976d2;}
+  /* 選択メニュー（ドロップダウン） */
+  #cellMenu{
+    display:none; position:fixed; z-index:150; background:#fff;
+    border:1px solid #b0bec5; border-radius:8px; box-shadow:0 4px 18px rgba(0,0,0,.25);
+    padding:4px; min-width:130px;
+  }
+  #cellMenu button{
+    display:flex; align-items:center; gap:8px; width:100%; border:none; background:none;
+    padding:7px 10px; font-size:13px; border-radius:5px; text-align:left; cursor:pointer;
+  }
+  #cellMenu button:hover{background:#eceff1;}
+  #cellMenu .sw2{width:16px; height:16px; border-radius:4px; border:1px solid rgba(0,0,0,.15); display:inline-block; flex:none;}
+  /* メンバーページ・説明書 */
+  #memberView,#manualView{display:none;}
+  .mv-head{display:flex; align-items:center; gap:14px; margin-bottom:10px; flex-wrap:wrap;}
+  .mv-head h2{margin:0; font-size:18px;}
+  table.wcal{border-collapse:separate; border-spacing:4px; margin-top:8px;}
+  .wcal th{font-size:12px; padding:2px 4px; color:#546e7a; font-weight:normal;}
+  .wcal th.sun{color:#c62828;} .wcal th.sat{color:#1565c0;}
+  .wcal td.wday{
+    width:72px; height:52px; border:1px solid #cfd8dc; border-radius:6px;
+    vertical-align:top; cursor:pointer; user-select:none; padding:3px 5px; background:#fff;
+  }
+  .wcal td.wday:hover{filter:brightness(.94);}
+  .wcal td.blank{border:none; background:none;}
+  .wcal td.leave{background:var(--c-leave); color:#90a4ae; cursor:default;}
+  .wcal .dnum{display:block; font-size:11px; color:#78909c;}
+  .wcal .wval{display:block; font-size:13px; font-weight:bold; margin-top:3px;}
+  .leave-row{display:flex; gap:8px; align-items:center; margin:6px 0; flex-wrap:wrap;}
+  .leave-row input[type=date]{font-size:13px; padding:3px 5px; border:1px solid #cfd8dc; border-radius:4px; font-family:inherit;}
+  .leave-row input[type=text]{font-size:13px; padding:3px 6px; border:1px solid #cfd8dc; border-radius:4px; width:150px; font-family:inherit;}
+  input[type=time]{font-size:13px; padding:2px 4px; border:1px solid #cfd8dc; border-radius:4px; font-family:inherit;}
+  #manualView .panel h3{font-size:15px; border-bottom:1px solid #eceff1; padding-bottom:5px;}
+  #manualView p, #manualView li{font-size:13px; line-height:1.9; margin:4px 0;}
+  #manualView ul,#manualView ol{margin:4px 0; padding-left:22px;}
+  #manualView table{border-collapse:collapse; font-size:13px; margin:6px 0;}
+  #manualView table th,#manualView table td{border:1px solid #cfd8dc; padding:4px 10px;}
+  #manualView table th{background:#f5f6f8;}
+  /* ログイン */
+  #loginOverlay{
+    position:fixed; inset:0; background:#f5f6f8; z-index:300;
+    display:none; align-items:center; justify-content:center;
+  }
+  #loginOverlay.show{display:flex;}
+  .login-card{
+    background:#fff; border:1px solid #e0e0e0; border-radius:12px;
+    padding:28px 32px; width:340px; box-shadow:0 4px 20px rgba(0,0,0,.08);
+  }
+  .login-card h2{margin:0 0 2px; font-size:18px;}
+  .login-card .sub{font-size:12px; color:#78909c; margin:0 0 6px;}
+  .login-card select,.login-card input{
+    width:100%; font-size:14px; padding:8px; margin-top:10px;
+    border:1px solid #cfd8dc; border-radius:6px; font-family:inherit;
+  }
+  .login-card button{width:100%; margin-top:14px; padding:9px;}
+  .login-err{color:#c62828; font-size:12px; margin-top:8px; min-height:16px;}
+  .login-hint{font-size:11px; color:#78909c; margin-top:8px; line-height:1.7;}
+  /* モーダル */
+  #overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200;
+    align-items:center; justify-content:center;
+  }
+  #overlay.show{display:flex;}
+  .modal{background:#fff; border-radius:10px; max-width:620px; width:92%; max-height:82vh; display:flex; flex-direction:column; box-shadow:0 8px 30px rgba(0,0,0,.3);}
+  .modal h2{margin:0; padding:14px 18px; font-size:16px; border-bottom:1px solid #eee;}
+  .modal .body{padding:12px 18px; overflow:auto; font-size:13px;}
+  .modal .body ul{margin:0; padding-left:20px;}
+  .modal .body li{margin-bottom:3px;}
+  .modal .foot{padding:12px 18px; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;}
+  #printTitle{display:none;}
+  @media print{
+    @page{size:A4 landscape; margin:8mm;}
+    header, details, .panel, #warnings, .legend, #memberView, #manualView, #cellMenu, .no-print{display:none !important;}
+    main{padding:0;}
+    body{background:#fff;}
+    #printTitle{display:block; font-size:16px; margin:0 0 6px;}
+    #mainView{display:block !important;}
+    .grid-wrap{max-height:none; overflow:visible; border:none;}
+    table.grid{font-size:9px;}
+    td.cell{min-width:18px; width:18px; height:18px; font-size:9px;}
+    td.cell.wmatch,td.cell.wmiss{box-shadow:none;}
+    .sticky-col{position:static;}
+    .grid thead th{position:static;}
+    td.mopen{color:inherit; text-decoration:none;}
+  }
+  @media (max-width:640px){
+    header{padding:8px 10px; gap:6px;}
+    header h1{font-size:15px; width:100%; margin:0;}
+    .month-nav .label{font-size:14px; min-width:88px;}
+    button{padding:6px 8px; font-size:12px;}
+    main{padding:8px 6px 40px;}
+    .grid-wrap{max-height:62vh;}
+    .wcal{border-spacing:2px;}
+    .wcal td.wday{width:46px; height:46px; padding:2px 3px;}
+    .wcal .wval{font-size:11px; margin-top:1px;}
+    .chip input{width:64px;}
+    .leave-row input[type=text]{width:110px;}
+    #userChip{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+<div id="loginOverlay">
+  <div class="login-card">
+    <h2>🏥 看護師勤務表メーカー</h2>
+    <p class="sub">ユーザーを選んでログインしてください</p>
+    <select id="loginUser"></select>
+    <input type="password" id="loginPw" placeholder="パスワード（未設定なら空欄のまま）">
+    <button class="primary" id="btnLogin">ログイン</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-hint">初期状態ではパスワードは未設定です。ログイン後、マイページで自分のパスワードを設定できます。</div>
+  </div>
+</div>
+<header>
+  <h1>🏥 看護師勤務表メーカー</h1>
+  <div class="month-nav">
+    <button id="btnPrev">◀</button>
+    <span class="label" id="monthLabel"></span>
+    <button id="btnNext">▶</button>
+  </div>
+  <button id="btnGen" class="primary">⚡ 自動作成</button>
+  <button id="btnClear" class="danger">全消去</button>
+  <button id="btnCsv">CSV出力</button>
+  <button id="btnPrint">印刷</button>
+  <button id="btnManual">📖 使い方</button>
+  <span id="cloudChip" style="display:none;font-size:12px"></span>
+  <span id="userChip"></span>
+  <button id="btnMyPage">👤 マイページ</button>
+  <button id="btnLogout">ログアウト</button>
+</header>
+<main>
+<div id="mainView">
+  <details open id="memberDetails">
+    <summary>👥 メンバー（<span id="memberCount"></span>名）</summary>
+    <div class="members" id="membersEl"></div>
+    <div class="info-line" id="staffInfo"></div>
+    <div class="settings-row no-print" id="wishImportRow">
+      <button id="btnWishImport">📥 希望ファイルを読み込み</button>
+      <input type="file" id="wishFile" accept=".json" style="display:none">
+    </div>
+  </details>
+  <details id="settingsDetails">
+    <summary>⚙ 設定</summary>
+    <div class="settings-row">
+      <label>公休日数 <input type="number" id="setOff" min="0" max="20"></label>
+      <label>準夜・深夜の人数 <input type="number" id="setNight" min="1" max="10"></label>
+      <label>夜勤の上限/月 <input type="number" id="setCap" min="1" max="15"></label>
+      <label>期間の開始日 <input type="number" id="setStart" min="1" max="28"></label>
+    </div>
+    <div class="rules" id="rulesEl"></div>
+    <div class="settings-row">
+      <span style="font-size:13px">役職の色:</span>
+      <label>師長 <input type="color" id="col_chief"></label>
+      <label>副師長 <input type="color" id="col_deputy"></label>
+      <label>リーダー <input type="color" id="col_leader"></label>
+      <label>一般 <input type="color" id="col_staff"></label>
+      <label>新人 <input type="color" id="col_rookie"></label>
+      <button id="btnColReset">標準に戻す</button>
+    </div>
+    <div class="settings-row" id="adminPwRow">
+      <button id="btnAdminPw">🔑 管理者パスワードの変更</button>
+      <span id="adminPwInfo" style="font-size:12px;color:#546e7a"></span>
+    </div>
+    <div id="cloudRow" style="display:none;margin-top:10px;padding:10px;border:1px solid #90caf9;border-radius:8px;background:#f5faff">
+      <b style="font-size:13px">☁ クラウド同期（全端末でデータを共有）</b>
+      <div class="info-line" id="cloudInfo" style="margin-top:4px"></div>
+      <div class="settings-row" style="margin-top:6px">
+        <label>apiKey <input type="text" id="cf_apiKey" style="width:230px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit"></label>
+        <label>authDomain <input type="text" id="cf_authDomain" style="width:200px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit"></label>
+        <label>projectId <input type="text" id="cf_projectId" style="width:150px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit"></label>
+        <label>病棟ID <input type="text" id="cf_wardId" style="width:150px;font-size:12px;padding:3px 5px;border:1px solid #cfd8dc;border-radius:4px;font-family:inherit" placeholder="例: 3fnaika-x8k2s"></label>
+      </div>
+      <div class="settings-row" style="margin-top:6px">
+        <button id="btnCloudSave" class="primary">保存して接続</button>
+        <button id="btnCloudLink">🔗 共有用リンクをコピー</button>
+        <button id="btnCloudOff" class="danger">同期を解除（この端末のみ）</button>
+        <span style="font-size:11px;color:#78909c">設定手順は「📖使い方」の「クラウド同期」を見てください</span>
+      </div>
+    </div>
+    <div class="settings-row">
+      <button id="btnExport">💾 データを書き出し</button>
+      <button id="btnImport">📂 データを読み込み</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </details>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--c-day)"></span>日勤 8:00〜16:45</span>
+    <span><span class="sw" style="background:var(--c-long)"></span>長日勤 8:00〜20:15</span>
+    <span><span class="sw" style="background:var(--c-eve)"></span>準夜 19:45〜0:00</span>
+    <span><span class="sw" style="background:var(--c-night)"></span>深夜 0:00〜8:45</span>
+    <span><span class="sw" style="background:var(--c-short)"></span>時短（時間は個人ごと）</span>
+    <span><span class="sw" style="background:var(--c-off)"></span>公休</span>
+    <span><span class="sw" style="background:var(--c-leave)"></span>長期休暇</span>
+    <span style="box-shadow:inset 0 -3px 0 0 #2e7d32; padding:0 3px">希望どおり</span>
+    <span style="box-shadow:inset 0 -3px 0 0 #ef6c00; padding:0 3px">希望と不一致</span>
+  </div>
+  <div id="warnings"></div>
+  <h2 id="printTitle"></h2>
+  <div class="grid-wrap">
+    <table class="grid" id="grid"></table>
+  </div>
+</div>
+
+<div id="memberView">
+  <div class="mv-head">
+    <button id="btnBack">← 勤務表に戻る</button>
+    <h2 id="mvName"></h2>
+    <span class="info-line" id="wishSummary" style="margin-top:0"></span>
+  </div>
+  <div class="panel">
+    <h3>👤 基本情報</h3>
+    <div id="mvInfo"></div>
+  </div>
+  <div class="panel">
+    <h3>📅 希望勤務（<span id="mvMonth"></span>）</h3>
+    <div class="info-line" id="wishHint"></div>
+    <table class="wcal" id="wishCal"></table>
+    <div style="margin-top:10px">
+      <button id="btnWishExport">📤 希望を書き出す（師長へ送る）</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>🌸 長期休暇（産休・育休など）</h3>
+    <div class="info-line">期間中は勤務に入りません。終了日が未定なら空欄のままにします。</div>
+    <div id="leaveList"></div>
+    <button id="btnAddLeave">＋ 休暇期間を追加</button>
+    <datalist id="leaveLabels">
+      <option value="産休"><option value="育休"><option value="病休"><option value="研修"><option value="長期休暇">
+    </datalist>
+  </div>
+</div>
+
+<div id="manualView">
+  <div class="mv-head">
+    <button id="btnManualBack">← 勤務表に戻る</button>
+    <h2>📖 使い方</h2>
+  </div>
+  <div class="panel">
+    <h3>ログインと権限</h3>
+    <table>
+      <tr><th>ユーザー</th><th>できること</th></tr>
+      <tr><td>管理者</td><td>すべての操作（メンバー・勤務表・設定・全員のパスワードリセット）</td></tr>
+      <tr><td>師長・副師長</td><td>勤務表の編集・自動作成・メンバー管理・設定</td></tr>
+      <tr><td>一般職員</td><td>勤務表の閲覧・CSV/印刷・マイページで自分の希望入力</td></tr>
+    </table>
+    <ul>
+      <li>初期状態では全員パスワード未設定です（空欄のままログインできます）。</li>
+      <li>各自マイページの「🔑パスワードを変更」で設定してください。忘れた場合は管理者がリセットできます。</li>
+      <li>管理者パスワードは⚙設定から変更します。最初に必ず設定してください。</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>基本の流れ</h3>
+    <ol>
+      <li><b>メンバーを登録する</b> — メンバー欄で名前と役職（師長／副師長／一般職(リーダー)／一般職／新人）を設定します。</li>
+      <li><b>希望や休暇を入れる</b> — 各自がマイページで希望勤務（公休の希望など）を入力します。師長は全員分を編集できます。</li>
+      <li><b>⚡自動作成</b> — 3つの方式から選ぶと、条件を満たす勤務表が自動で作られます。</li>
+      <li><b>チェックと手直し</b> — 条件違反は赤枠と一覧で表示されます。セルをクリックして選び直せます。</li>
+      <li><b>出力</b> — CSV出力（Excelで開けます）または印刷（A4横）します。</li>
+    </ol>
+  </div>
+  <div class="panel">
+    <h3>勤務の種類</h3>
+    <table>
+      <tr><th>記号</th><th>勤務</th><th>時間</th></tr>
+      <tr><td>日</td><td>日勤</td><td>8:00〜16:45</td></tr>
+      <tr><td>長</td><td>長日勤</td><td>8:00〜20:15</td></tr>
+      <tr><td>準</td><td>準夜</td><td>19:45〜0:00</td></tr>
+      <tr><td>深</td><td>深夜</td><td>0:00〜8:45</td></tr>
+      <tr><td>時</td><td>時短勤務</td><td>個人ごとに設定（個人ページ）</td></tr>
+      <tr><td>休</td><td>公休</td><td>—</td></tr>
+    </table>
+    <p>準夜→翌日の深夜のセットを「ゼット勤務」と呼び、必ず同じ人が続けて入ります。夜勤1回＝このセット1回です。</p>
+  </div>
+  <div class="panel">
+    <h3>勤務表の操作（師長・管理者）</h3>
+    <ul>
+      <li><b>セルをクリック</b>すると勤務の選択メニューが開きます。選ぶだけで入力できます。</li>
+      <li><b>名前をクリック</b>すると個人ページが開きます。<b>名前をドラッグ</b>すると行を並び替えられます。</li>
+      <li>右端に個人ごとの回数、下に日ごとの人数が集計されます。条件に合わない箇所は赤く表示されます。</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>マイページ（全員）</h3>
+    <ul>
+      <li>右上の「👤マイページ」から自分のページを開きます。</li>
+      <li><b>希望勤務</b> — 日付をクリックして希望（希望休など）を選びます。自分の希望だけ変更できます。</li>
+      <li><b>パスワード変更</b> — 自分のログインパスワードを設定・変更できます。</li>
+      <li><b>希望の書き出し</b> — 希望をファイルにしてLINEなどで師長に送れます。師長は「📥希望ファイルを読み込み」で取り込みます。</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>自動作成の3方式</h3>
+    <ul>
+      <li><b>① 希望を全て反映</b> — 全員の希望を必ず反映します。不可能なときは作らずに理由を表示し、②③を選べます。</li>
+      <li><b>② 可能な限り反映</b> — 条件を優先しつつ希望をできるだけ反映します。反映できなかった希望は一覧で表示されます。</li>
+      <li><b>③ 希望を考慮しない</b> — 条件のみで作成します。</li>
+    </ul>
+    <p>自動作成は「長日勤 → 翌日準夜 → 深夜 → 休み」の4日ブロックで夜勤を回します。このため長日勤も毎日、夜勤と同じ人数になります。</p>
+  </div>
+  <div class="panel">
+    <h3>個人ページの設定（師長・管理者）</h3>
+    <ul>
+      <li><b>時短勤務</b> — 「時短勤務にする」にチェックし、勤務時間を入力します。時短の人は夜勤・長日勤に入りません。</li>
+      <li><b>長期休暇</b> — 産休・育休などの期間を登録すると、勤務表でグレー表示になり割り当てから外れます。公休の必要日数も在籍日数に合わせて自動調整されます。</li>
+      <li><b>パスワードのリセット</b> — 管理者はこのページから各メンバーのパスワードを再設定できます。</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>条件（チェックする規則）</h3>
+    <p>⚙設定の「条件チェック」で、各規則のオン・オフと数値を変更できます。オフにした規則は警告の対象外になります。</p>
+    <ul>
+      <li>準夜・深夜は設定人数ぴったり（新人が入る日は＋1名の5名体制）</li>
+      <li>ゼット勤務（準夜→翌日深夜が同一メンバー）</li>
+      <li>公休の日数（標準8日）</li>
+      <li>日勤に師長（不在日は副師長）が必要</li>
+      <li>長日勤の翌日は準夜か公休</li>
+      <li>日勤・長日勤・準夜・深夜にリーダー1名以上（師長・副師長もリーダー扱い）</li>
+      <li>夜勤は1人あたり月5回以内（標準）</li>
+      <li>新人の夜勤は月1回のみ</li>
+      <li>長日勤と夜勤の回数は同数</li>
+      <li>時短勤務者に夜勤・長日勤を入れない</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>期間の開始日（締め日対応）</h3>
+    <p>⚙設定の「期間の開始日」を変えると、「21日〜翌月20日」のような期間で勤務表を作れます。「1」なら通常の月初〜月末です。</p>
+    <p>※ 開始日の変更は運用開始前に行うことをおすすめします（既存データの日付対応がずれるため）。</p>
+  </div>
+  <div class="panel">
+    <h3>スマートフォンでの利用</h3>
+    <ol>
+      <li>このHTMLファイルをLINEやメールでスマホに送って開きます（画面は自動でスマホ用になります）。</li>
+      <li>スマホでも同じようにログインし、マイページで希望を入力します。</li>
+      <li>「📤希望を書き出す」でファイルを保存し、師長に送ります。師長はパソコンで取り込みます。</li>
+    </ol>
+    <p>※ スマホとパソコンのデータは自動では同期されません。受け渡しは希望ファイルで行ってください。</p>
+  </div>
+  <div class="panel">
+    <h3>クラウド同期（全端末でデータを共有）</h3>
+    <p>Firebase（Googleのクラウド、無料プラン）を使うと、職場のPC・自宅のPC・各自のスマホが<b>同じデータをリアルタイムで共有</b>できます。スマホで入力した希望が、そのまま師長の画面に反映されます。</p>
+    <p><b>準備（管理者が1回だけ行います。同梱の「クラウド同期の設定手順」に画面つきの詳細があります）:</b></p>
+    <ol>
+      <li>Googleアカウントで <b>console.firebase.google.com</b> を開き、プロジェクトを作成</li>
+      <li>Authentication →「匿名」ログインを有効化</li>
+      <li>Firestore Database → データベースを作成（本番モード、東京: asia-northeast1）→ ルールを手順書のとおり貼り替え</li>
+      <li>プロジェクト設定 → ウェブアプリを追加 → 表示される <b>apiKey / authDomain / projectId</b> をメモ</li>
+      <li>このアプリに管理者でログイン → ⚙設定 →「☁クラウド同期」に3つの値と<b>病棟ID</b>（推測されにくい好きな文字列）を入力 →「保存して接続」</li>
+      <li>他の端末でも同じHTMLを開き、同じ4つの値で接続すると同期されます</li>
+    </ol>
+    <ul>
+      <li>ヘッダーの「☁同期中」が緑なら共有されています。</li>
+      <li>初めて接続した端末のデータがクラウドの初期データになります。2台目以降はクラウドのデータで上書きされます。</li>
+      <li>※ 病棟IDと設定値を知っている人はデータにアクセスできます。IDは長めの文字列にし、部外者に教えないでください。</li>
+    </ul>
+    <p><b>URLで開けるようにする（おすすめ）:</b> 手順書のSTEP 7のとおり無料のGitHub PagesにこのHTMLを公開すると、各自がURLを開くだけで使えます。さらに管理者が⚙設定の「🔗共有用リンクをコピー」で作ったリンクを配れば、<b>開くだけで接続設定まで完了</b>します（職員は自分のユーザーでログインするだけ）。</p>
+  </div>
+  <div class="panel">
+    <h3>データの保存と引き継ぎ</h3>
+    <ul>
+      <li>データは開いているパソコンのブラウザ内に自動保存されます。ファイル自体には入っていません。</li>
+      <li>別のパソコンへ移すときやバックアップは、⚙設定の「💾データを書き出し」→「📂データを読み込み」を使います。</li>
+      <li>ブラウザの履歴削除（サイトデータの削除）でデータが消えることがあります。定期的な書き出しをおすすめします。</li>
+      <li>※ ログインは簡易的なものです。厳密なセキュリティが必要な情報は保存しないでください。</li>
+    </ul>
+  </div>
+  <div class="panel">
+    <h3>月をまたぐ夜勤について</h3>
+    <p>期間の最終日の長日勤チームは、翌期間の初日に準夜へ入る想定です。翌期間を作成したら、初日の準夜・深夜メンバーを前期間の末尾に合わせて手直ししてください。</p>
+  </div>
+</div>
+</main>
+<div id="cellMenu"></div>
+<div id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle"></h2>
+    <div class="body"><ul id="modalList"></ul>
+      <input id="modalInput" type="password" style="display:none;margin-top:10px;width:100%;font-size:14px;padding:6px 8px;border:1px solid #cfd8dc;border-radius:6px;font-family:inherit">
+    </div>
+    <div class="foot" id="modalFoot"></div>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+var STORAGE_KEY='kinmu-maker-v2';
+var WD=['日','月','火','水','木','金','土'];
+var SHIFTS={
+  '日':{name:'日勤',cls:'s-day'},
+  '長':{name:'長日勤',cls:'s-long'},
+  '準':{name:'準夜',cls:'s-eve'},
+  '深':{name:'深夜',cls:'s-night'},
+  '時':{name:'時短',cls:'s-short'},
+  '休':{name:'公休',cls:'s-off'}
+};
+var CODES=['日','長','準','深','時','休'];
+var ROLE_NAME={chief:'師長',deputy:'副師長',leader:'リーダー',staff:'一般',rookie:'新人'};
+var ROLE_KEYS=['chief','deputy','leader','staff','rookie'];
+var RULE_DEFS=[
+  ['nightCount','準夜・深夜は設定人数ぴったり'],
+  ['zet','ゼット勤務（準夜→翌日深夜）'],
+  ['offDays','公休の日数'],
+  ['chief','日勤に師長／副師長'],
+  ['longNext','長日勤の翌日は準夜か公休'],
+  ['leader','各勤務にリーダー1名以上'],
+  ['nightCap','夜勤回数の上限'],
+  ['rookie','新人ルール（夜勤月1回・5名体制）'],
+  ['parity','長日勤と夜勤の回数一致'],
+  ['short','時短者に夜勤・長日勤なし']
+];
+function leaderQ(m){return m.role==='chief'||m.role==='deputy'||m.role==='leader';}
+function isShort(m){return !!(m.short&&m.short.on);}
+function defaultRoleColors(){return {chief:'#ffe082',deputy:'#fff3c4',leader:'#b2dfdb',staff:'#ffffff',rookie:'#f8bbd0'};}
+function defaultRules(){var o={};RULE_DEFS.forEach(function(r){o[r[0]]=true;});return o;}
+
+function sampleMembers(){
+  var defs=[
+    ['高橋','chief'],['田中','deputy'],
+    ['佐藤','leader'],['鈴木','leader'],['伊藤','leader'],['渡辺','leader'],
+    ['山本','leader'],['中村','leader'],['小林','leader'],['加藤','leader'],
+    ['吉田','staff'],['山田','staff'],['松本','staff'],['井上','staff'],['木村','staff'],['林','staff'],
+    ['斎藤','staff'],['清水','staff'],['森','staff'],['池田','staff'],['橋本','staff'],['阿部','staff'],
+    ['石川','staff'],['近藤','staff'],['坂本','staff'],['遠藤','staff'],['青木','staff'],['西村','staff'],
+    ['藤田','rookie'],['岡田','rookie']
+  ];
+  return defs.map(function(x,i){return {id:'m'+(i+1),name:x[0],role:x[1],leaves:[],short:{on:false,from:'09:00',to:'16:00'},pw:''};});
+}
+// 共有データ（クラウド同期の対象）
+function defaultState(){
+  return {
+    members:sampleMembers(), nextId:31,
+    schedules:{}, wishes:{},
+    settings:{offDays:8,nightSize:4,nightCap:5,startDay:1,roleColors:defaultRoleColors(),rules:defaultRules()},
+    adminPass:''
+  };
+}
+// この端末だけの設定（ログイン状態・表示中の月・クラウド接続情報）
+var LOCAL_KEY='kinmu-local-v1';
+function defaultLoc(){
+  var now=new Date();
+  var next=new Date(now.getFullYear(),now.getMonth()+1,1);
+  return {year:next.getFullYear(), month:next.getMonth()+1, view:'main', session:null, genNotes:[], cloud:null};
+}
+function normalize(st){
+  st.members.forEach(function(m){
+    if(!m.leaves) m.leaves=[];
+    if(!ROLE_NAME[m.role]) m.role='staff';
+    if(!m.short) m.short={on:false,from:'09:00',to:'16:00'};
+    if(m.pw===undefined) m.pw=m.pin||'';
+    delete m.pin;
+  });
+  if(!st.wishes) st.wishes={};
+  if(!st.settings.nightCap) st.settings.nightCap=5;
+  if(!st.settings.startDay||st.settings.startDay<1) st.settings.startDay=1;
+  if(st.settings.startDay>28) st.settings.startDay=28;
+  if(!st.settings.roleColors) st.settings.roleColors=defaultRoleColors();
+  ROLE_KEYS.forEach(function(r){if(!st.settings.roleColors[r]) st.settings.roleColors[r]=defaultRoleColors()[r];});
+  if(!st.settings.rules) st.settings.rules=defaultRules();
+  RULE_DEFS.forEach(function(r){if(st.settings.rules[r[0]]===undefined) st.settings.rules[r[0]]=true;});
+  if(st.adminPass===undefined) st.adminPass=st.editPass||'';
+  delete st.editPass;
+  return st;
+}
+function load(){
+  try{
+    var s=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(s&&s.members) return normalize(Object.assign(defaultState(),s));
+  }catch(e){}
+  return null;
+}
+function loadLoc(){
+  try{
+    var l=JSON.parse(localStorage.getItem(LOCAL_KEY));
+    if(l&&l.year) return Object.assign(defaultLoc(),l);
+  }catch(e){}
+  // 旧形式（共有データに混在していた端末設定）からの移行
+  try{
+    var s=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(s&&s.year){
+      var l2=defaultLoc();
+      l2.year=s.year; l2.month=s.month;
+      if(s.view) l2.view=s.view;
+      if(s.session!==undefined) l2.session=s.session;
+      if(s.genNotes) l2.genNotes=s.genNotes;
+      return l2;
+    }
+  }catch(e){}
+  return defaultLoc();
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
+  cloudPush();
+}
+var state=load()||defaultState();
+var loc=loadLoc();
+if(loc.session&&loc.session.type==='member'&&!state.members.some(function(m){return m.id===loc.session.mid;})) loc.session=null;
+
+// URLに埋め込まれた接続設定（#cfg=…）を取り込む（共有リンクで開いた場合）
+(function(){
+  if(location.hash&&location.hash.indexOf('#cfg=')===0){
+    try{
+      var c=JSON.parse(decodeURIComponent(location.hash.slice(5)));
+      if(c&&c.apiKey&&c.projectId&&c.wardId){
+        loc.cloud={apiKey:String(c.apiKey),authDomain:String(c.authDomain||''),projectId:String(c.projectId),wardId:String(c.wardId)};
+        localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
+      }
+    }catch(e){}
+    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  }
+})();
+
+/* ---------- クラウド同期（Firebase / 無料プラン） ----------
+   loc.cloud={apiKey,authDomain,projectId,wardId} を設定すると有効。
+   データ構造: wards/{wardId}/meta/core, months/{YYYY-MM}, wishes/{YYYY-MM} */
+var cloud={status:'off',msg:''};
+var db=null, fbAuth=null;
+var pushed={core:'',months:{},wishes:{}};
+function cloudConfigured(){
+  return !!(loc.cloud&&loc.cloud.apiKey&&loc.cloud.projectId&&loc.cloud.wardId);
+}
+function cloudBase(){return 'wards/'+loc.cloud.wardId;}
+function setCloudStatus(s,msg){
+  cloud.status=s; cloud.msg=msg||'';
+  renderCloudUI();
+}
+function renderCloudUI(){
+  var chip=document.getElementById('cloudChip');
+  if(!chip) return;
+  if(!cloudConfigured()){chip.style.display='none';}
+  else{
+    chip.style.display='';
+    var map={off:['☁ 未接続','#78909c'],loading:['☁ 準備中…','#78909c'],auth:['☁ 接続中…','#78909c'],ok:['☁ 同期中','#2e7d32'],error:['☁ エラー','#c62828']};
+    var v=map[cloud.status]||map.off;
+    chip.textContent=v[0]; chip.style.color=v[1]; chip.title=cloud.msg;
+  }
+  var info=document.getElementById('cloudInfo');
+  if(info){
+    info.textContent=cloudConfigured()
+      ?('状態: '+(cloud.status==='ok'?'同期中（全端末で共有されています）':cloud.status==='error'?'エラー: '+cloud.msg:cloud.msg||'接続中…'))
+      :'未設定: データはこの端末の中だけに保存されています。設定方法は「📖使い方」参照。';
+  }
+}
+function loadSdk(cb){
+  if(window.firebase&&window.firebase.firestore){cb(null); return;}
+  var urls=[
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js'
+  ];
+  var i=0;
+  (function next(){
+    if(i>=urls.length){cb(null); return;}
+    var s=document.createElement('script');
+    s.src=urls[i++];
+    s.onload=next;
+    s.onerror=function(){cb(new Error('SDK読み込み失敗'));};
+    document.head.appendChild(s);
+  })();
+}
+function startCloud(){
+  if(!cloudConfigured()) return;
+  setCloudStatus('loading','同期の準備中…');
+  loadSdk(function(err){
+    if(err){setCloudStatus('error','同期用プログラムを読み込めません（インターネット接続を確認してください）'); return;}
+    try{
+      var cfg={apiKey:loc.cloud.apiKey, authDomain:loc.cloud.authDomain||'', projectId:loc.cloud.projectId};
+      var app=window.firebase.apps.length?window.firebase.app():window.firebase.initializeApp(cfg);
+      fbAuth=window.firebase.auth();
+      db=window.firebase.firestore();
+      if(loc.cloud.emu){
+        fbAuth.useEmulator('http://'+loc.cloud.emu+':9099');
+        db.useEmulator(loc.cloud.emu,8080);
+      }
+      setCloudStatus('auth','サーバーに接続中…');
+      fbAuth.signInAnonymously().then(function(){
+        return db.doc(cloudBase()+'/meta/core').get();
+      }).then(function(snap){
+        if(!snap.exists){
+          // クラウド側が空: この端末のデータを初回アップロード
+          setCloudStatus('ok','同期中');
+          pushed={core:'',months:{},wishes:{}};
+          cloudPush();
+        }
+        attachCloud();
+      }).catch(function(e){
+        setCloudStatus('error',(e&&e.message)||'接続エラー');
+      });
+    }catch(e){
+      setCloudStatus('error','設定エラー: '+((e&&e.message)||e));
+    }
+  });
+}
+function attachCloud(){
+  var b=cloudBase();
+  db.doc(b+'/meta/core').onSnapshot(function(snap){
+    if(!snap.exists) return;
+    var c=snap.data()||{};
+    if(c.members) state.members=c.members;
+    if(c.nextId) state.nextId=c.nextId;
+    if(c.settings) state.settings=c.settings;
+    if(c.adminPass!==undefined) state.adminPass=c.adminPass;
+    normalize(state);
+    if(loc.session&&loc.session.type==='member'&&!state.members.some(function(m){return m.id===loc.session.mid;})) loc.session=null;
+    pushed.core=JSON.stringify({members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass});
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
+    setCloudStatus('ok');
+    renderAll();
+  },function(e){setCloudStatus('error','同期エラー: '+e.message);});
+  db.collection(b+'/months').onSnapshot(function(snap){
+    if(snap.empty&&Object.keys(state.schedules).length>0) return; // 初回アップロード前の空通知は無視
+    var sc={};
+    snap.forEach(function(d){
+      sc[d.id]=(d.data()||{}).sc||{};
+      pushed.months[d.id]=JSON.stringify(sc[d.id]);
+    });
+    state.schedules=sc;
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    renderAll();
+  },function(e){setCloudStatus('error','同期エラー: '+e.message);});
+  db.collection(b+'/wishes').onSnapshot(function(snap){
+    if(snap.empty&&Object.keys(state.wishes).length>0) return;
+    var w={};
+    pushed.wishes={};
+    snap.forEach(function(d){
+      w[d.id]=d.data()||{};
+      pushed.wishes[d.id]={};
+      Object.keys(w[d.id]).forEach(function(mid){pushed.wishes[d.id][mid]=JSON.stringify(w[d.id][mid]);});
+    });
+    state.wishes=w;
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+    renderAll();
+  },function(e){setCloudStatus('error','同期エラー: '+e.message);});
+}
+function cloudPush(){
+  if(!db||cloud.status!=='ok') return;
+  try{
+    var b=cloudBase();
+    var core={members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass};
+    var cs=JSON.stringify(core);
+    if(cs!==pushed.core){
+      pushed.core=cs;
+      db.doc(b+'/meta/core').set(JSON.parse(cs));
+    }
+    Object.keys(state.schedules).forEach(function(mk){
+      var s=JSON.stringify(state.schedules[mk]||{});
+      if(s!==pushed.months[mk]){
+        pushed.months[mk]=s;
+        db.doc(b+'/months/'+mk).set({sc:JSON.parse(s)});
+      }
+    });
+    Object.keys(state.wishes).forEach(function(mk){
+      var upd={}, any=false;
+      var pw=pushed.wishes[mk]||(pushed.wishes[mk]={});
+      Object.keys(state.wishes[mk]).forEach(function(mid){
+        var s=JSON.stringify(state.wishes[mk][mid]||{});
+        if(s!==pw[mid]){pw[mid]=s; upd[mid]=JSON.parse(s); any=true;}
+      });
+      Object.keys(pw).forEach(function(mid){
+        if(!state.wishes[mk][mid]){
+          delete pw[mid];
+          upd[mid]=window.firebase.firestore.FieldValue.delete();
+          any=true;
+        }
+      });
+      if(any) db.doc(b+'/wishes/'+mk).set(upd,{merge:true});
+    });
+  }catch(e){
+    setCloudStatus('error','送信エラー: '+((e&&e.message)||e));
+  }
+}
+
+/* ---------- 権限 ---------- */
+function isAdmin(){return !!(loc.session&&loc.session.type==='admin');}
+function curMember(){
+  if(!loc.session||loc.session.type!=='member') return null;
+  return state.members.filter(function(m){return m.id===loc.session.mid;})[0]||null;
+}
+function isEditor(){
+  if(isAdmin()) return true;
+  var m=curMember();
+  return !!(m&&(m.role==='chief'||m.role==='deputy'));
+}
+function editable(){return isEditor();}
+function canEdit(){
+  if(editable()) return true;
+  showModal('権限がありません',
+    ['この操作は師長・副師長または管理者のみ行えます。','自分の希望勤務はマイページから入力できます。'],
+    [{label:'閉じる'}]);
+  return false;
+}
+function wishEditableFor(m){
+  if(isEditor()) return true;
+  var c=curMember();
+  return !!(c&&c.id===m.id);
+}
+
+/* ---------- 期間（開始日対応） ---------- */
+function periodStart(){return new Date(loc.year,loc.month-1,state.settings.startDay);}
+function pdays(){
+  var s=periodStart();
+  var e=new Date(loc.year,loc.month,state.settings.startDay);
+  return Math.round((e-s)/86400000);
+}
+function dateOf(d){
+  var s=periodStart();
+  return new Date(s.getFullYear(),s.getMonth(),s.getDate()+d-1);
+}
+function dateStrOf(d){
+  var dt=dateOf(d);
+  return dt.getFullYear()+'-'+('0'+(dt.getMonth()+1)).slice(-2)+'-'+('0'+dt.getDate()).slice(-2);
+}
+function fmtD(d){
+  var dt=dateOf(d);
+  return (dt.getMonth()+1)+'/'+dt.getDate();
+}
+function periodLabel(){
+  if(state.settings.startDay<=1) return loc.year+'年'+loc.month+'月';
+  return loc.year+'年'+loc.month+'月度（'+fmtD(1)+'〜'+fmtD(pdays())+'）';
+}
+function monthKey(){return loc.year+'-'+('0'+loc.month).slice(-2);}
+function sched(){
+  if(!state.schedules[monthKey()]) state.schedules[monthKey()]={};
+  return state.schedules[monthKey()];
+}
+function getCell(mid,d){var s=sched()[mid]; return s?(s[d]||''):'';}
+function setCell(mid,d,v){
+  var s=sched();
+  if(!s[mid]) s[mid]={};
+  if(v) s[mid][d]=v; else delete s[mid][d];
+}
+function getWish(mid,d){
+  var mo=state.wishes[monthKey()];
+  if(!mo) return '';
+  var w=mo[mid];
+  return w?(w[d]||''):'';
+}
+function setWish(mid,d,v){
+  if(!state.wishes[monthKey()]) state.wishes[monthKey()]={};
+  var mo=state.wishes[monthKey()];
+  if(!mo[mid]) mo[mid]={};
+  if(v) mo[mid][d]=v; else delete mo[mid][d];
+}
+function monthHasData(){
+  var s=sched();
+  return Object.keys(s).some(function(mid){return Object.keys(s[mid]).length>0;});
+}
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* ---------- 長期休暇 ---------- */
+function computeLeaveMap(){
+  var map={}, days=pdays();
+  state.members.forEach(function(m){
+    map[m.id]={};
+    (m.leaves||[]).forEach(function(L){
+      if(!L.from&&!L.to) return;
+      for(var d=1;d<=days;d++){
+        var ds=dateStrOf(d);
+        if((!L.from||ds>=L.from)&&(!L.to||ds<=L.to)) map[m.id][d]=L.label||'休暇';
+      }
+    });
+  });
+  return map;
+}
+function requiredOffMap(){
+  var days=pdays(), lvm=computeLeaveMap(), map={};
+  state.members.forEach(function(m){
+    var lv=0;
+    for(var d=1;d<=days;d++) if(lvm[m.id][d]) lv++;
+    map[m.id]=lv===0?state.settings.offDays:Math.max(0,Math.round(state.settings.offDays*(days-lv)/days));
+  });
+  return map;
+}
+
+/* ---------- 検証 ---------- */
+function collectIssues(read){
+  var issues=[];
+  var days=pdays();
+  var ns=state.settings.nightSize;
+  var cap=state.settings.nightCap;
+  var R=state.settings.rules;
+  var lvm=computeLeaveMap();
+  var req=requiredOffMap();
+  function add(msg,cells){issues.push({msg:msg,cells:cells||[]});}
+  var d;
+  state.members.forEach(function(m){
+    for(var d=1;d<=days;d++)
+      if(lvm[m.id][d]&&read(m.id,d))
+        add(m.name+'さん '+fmtD(d)+': 休暇期間（'+lvm[m.id][d]+'）に勤務が入っています',[[m.id,d]]);
+  });
+  for(d=1;d<=days;d++){
+    var g={'準':{nr:[],rk:[]},'深':{nr:[],rk:[]},'長':{nr:[],rk:[]}};
+    state.members.forEach(function(m){
+      var v=read(m.id,d);
+      if(g[v]) g[v][m.role==='rookie'?'rk':'nr'].push(m);
+    });
+    ['準','深'].forEach(function(c){
+      if(R.nightCount&&g[c].nr.length!==ns)
+        add(fmtD(d)+': '+SHIFTS[c].name+'（新人除く）が'+g[c].nr.length+'名です（'+ns+'名ぴったり必要）',g[c].nr.map(function(m){return [m.id,d];}));
+      if(R.rookie&&g[c].rk.length>1)
+        add(fmtD(d)+': '+SHIFTS[c].name+'の新人が'+g[c].rk.length+'名います（新人は1名まで）',g[c].rk.map(function(m){return [m.id,d];}));
+    });
+    if(R.rookie&&g['長'].rk.length>0&&(g['長'].nr.length!==ns||g['長'].rk.length>1))
+      add(fmtD(d)+': 新人が長日勤に入る日は、新人以外'+ns+'名＋新人1名にしてください（現在 '+(g['長'].nr.length+g['長'].rk.length)+'名）',
+        g['長'].nr.concat(g['長'].rk).map(function(m){return [m.id,d];}));
+  }
+  if(R.zet) state.members.forEach(function(m){
+    for(var d=1;d<=days;d++){
+      var v=read(m.id,d);
+      if(v==='準'&&d<days&&read(m.id,d+1)!=='深')
+        add(m.name+'さん '+fmtD(d)+': 準夜の翌日は同じ人が深夜に入ります（ゼット勤務）',[[m.id,d],[m.id,d+1]]);
+      if(v==='深'&&d>1&&read(m.id,d-1)!=='準')
+        add(m.name+'さん '+fmtD(d)+': 深夜の前日は同じ人が準夜に入ります（ゼット勤務）',[[m.id,d],[m.id,d-1]]);
+    }
+  });
+  if(R.leader) for(d=1;d<=days;d++){
+    ['日','長','準','深'].forEach(function(c){
+      var group=state.members.filter(function(m){
+        var v=read(m.id,d);
+        return v===c||(c==='日'&&v==='時');
+      });
+      if(group.length===0) return;
+      if(!group.some(leaderQ))
+        add(fmtD(d)+': '+SHIFTS[c].name+'にリーダー（または師長・副師長）がいません',group.map(function(m){return [m.id,d];}));
+    });
+  }
+  state.members.forEach(function(m){
+    var jun=0,cho=0,lvDays=0;
+    for(var d=1;d<=days;d++){
+      var v=read(m.id,d);
+      if(v==='準')jun++;
+      if(v==='長')cho++;
+      if(lvm[m.id][d])lvDays++;
+      if(R.short){
+        if(isShort(m)&&(v==='準'||v==='深'||v==='長'))
+          add(m.name+'さん '+fmtD(d)+': 時短勤務者に夜勤・長日勤は入れられません',[[m.id,d]]);
+        if(!isShort(m)&&v==='時')
+          add(m.name+'さん '+fmtD(d)+': 時短勤務者ではありません（個人ページで時短を設定できます）',[[m.id,d]]);
+      }
+    }
+    var sets=jun+(read(m.id,1)==='深'?1:0);
+    if(m.role==='rookie'&&R.rookie&&!isShort(m)){
+      if(sets>1) add(m.name+'さん（新人）: 夜勤が'+sets+'回です（月1回のみ）',[]);
+      else if(sets===0&&lvDays===0) add(m.name+'さん（新人）: 夜勤が0回です（月1回必要）',[]);
+    }else if(m.role!=='rookie'&&R.nightCap&&sets>cap){
+      add(m.name+'さん: 夜勤が'+sets+'回です（上限'+cap+'回）',[]);
+    }
+    if(R.parity){
+      var diff=cho-jun;
+      var ok=diff===0
+        ||(diff===-1&&read(m.id,1)==='準')
+        ||(diff===1&&read(m.id,days)==='長');
+      if(!ok)
+        add(m.name+'さん: 長日勤'+cho+'回と夜勤'+jun+'回が一致していません',[]);
+    }
+  });
+  if(R.offDays) state.members.forEach(function(m){
+    var c=0, hasLv=false;
+    for(var d=1;d<=days;d++){
+      if(read(m.id,d)==='休') c++;
+      if(lvm[m.id][d]) hasLv=true;
+    }
+    if(c!==req[m.id])
+      add(m.name+'さん: 公休が'+c+'日です（'+req[m.id]+'日必要'+(hasLv?'※休暇分調整済み':'')+'）',[]);
+  });
+  if(R.chief){
+    var chiefs=state.members.filter(function(m){return m.role==='chief';});
+    var deps=state.members.filter(function(m){return m.role==='deputy';});
+    if(chiefs.length===0&&deps.length===0){
+      add('看護師長・副看護師長が登録されていません',[]);
+    }else{
+      for(d=1;d<=days;d++){
+        var on=function(m){var v=read(m.id,d); return v==='日'||v==='長'||v==='時';};
+        if(!chiefs.some(on)&&!deps.some(on))
+          add(fmtD(d)+': 日勤に看護師長も副看護師長もいません',chiefs.concat(deps).map(function(m){return [m.id,d];}));
+      }
+    }
+  }
+  if(R.longNext) state.members.forEach(function(m){
+    for(var d=1;d<days;d++){
+      if(read(m.id,d)==='長'){
+        var nx=read(m.id,d+1);
+        if(nx!=='準'&&nx!=='休'&&!(nx===''&&lvm[m.id][d+1]))
+          add(m.name+'さん '+fmtD(d+1)+': 長日勤の翌日は準夜か公休にしてください',[[m.id,d],[m.id,d+1]]);
+      }
+    }
+  });
+  return issues;
+}
+function validate(){return collectIssues(getCell);}
+function validateSc(sc){
+  return collectIssues(function(mid,d){var s=sc[mid]; return s?(s[d]||''):'';});
+}
+
+/* ---------- 自動作成 ---------- */
+function pickSpread(days,count,phase,blocked){
+  var res=[];
+  for(var i=0;i<count;i++){
+    var d=Math.round((i+phase)*days/count)+1;
+    if(d>days) d-=days;
+    if(d<1) d=1;
+    var tries=0;
+    while((res.indexOf(d)>=0||blocked(d))&&tries<days*2){d=d%days+1;tries++;}
+    if(tries<days*2) res.push(d);
+  }
+  return res;
+}
+function runGenerate(mode){
+  var days=pdays();
+  var ns=state.settings.nightSize, cap=state.settings.nightCap;
+  var notes=[];
+  var lvm=computeLeaveMap();
+  var req=requiredOffMap();
+  var sc={};
+  state.members.forEach(function(m){sc[m.id]={};});
+  var wsrc=(mode===3)?{}:(state.wishes[monthKey()]||{});
+  function wishOf(mid,d){var w=wsrc[mid]; return w?(w[d]||''):'';}
+  function onLeave(m,d){return !!lvm[m.id][d];}
+  function free(m,d){return d>=1&&d<=days&&!sc[m.id][d]&&!onLeave(m,d);}
+  var mgmt=state.members.filter(function(m){return m.role==='chief'||m.role==='deputy';});
+  var pool=state.members.filter(function(m){return (m.role==='leader'||m.role==='staff')&&!isShort(m);});
+  var rookies=state.members.filter(function(m){return m.role==='rookie'&&!isShort(m);});
+  var shorts=state.members.filter(function(m){return m.role!=='chief'&&m.role!=='deputy'&&isShort(m);});
+  pool.forEach(function(s,i){s._seq=i;});
+  var leaveWishSkipped=false;
+
+  var setCnt={},offCnt={},choCnt={},lastN={};
+  state.members.forEach(function(m){setCnt[m.id]=0;offCnt[m.id]=0;choCnt[m.id]=0;lastN[m.id]=-99;});
+
+  if(mode!==3){
+    var junNR={},junRK={},shinNR={},shinRK={},offW={};
+    var cnt=function(map,d){return map[d]||0;};
+    var setW={};
+    state.members.forEach(function(m){offW[m.id]=0;setW[m.id]=0;});
+    state.members.forEach(function(m){
+      var rk=m.role==='rookie';
+      var junMap=rk?junRK:junNR, shinMap=rk?shinRK:shinNR;
+      var junCap=rk?1:ns, shinCap=rk?1:ns;
+      var setLimit=rk?1:cap;
+      for(var d=1;d<=days;d++){
+        var w=wishOf(m.id,d);
+        if(!w) continue;
+        if(onLeave(m,d)){leaveWishSkipped=true; continue;}
+        if(sc[m.id][d]) continue;
+        if(isShort(m)&&w!=='休'&&w!=='時') continue;
+        if(w==='休'){
+          if(offW[m.id]>=req[m.id]) continue;
+          sc[m.id][d]='休'; offW[m.id]++;
+          continue;
+        }
+        if(w==='時'){
+          if(isShort(m)) sc[m.id][d]='時';
+          continue;
+        }
+        if(w==='準'){
+          if(cnt(junMap,d)>=junCap||setW[m.id]>=setLimit) continue;
+          if(d<days){
+            if(sc[m.id][d+1]==='深'){}
+            else{
+              if(!free(m,d+1)) continue;
+              if(cnt(shinMap,d+1)>=shinCap) continue;
+            }
+          }
+          sc[m.id][d]='準'; junMap[d]=cnt(junMap,d)+1; setW[m.id]++;
+          if(d<days&&sc[m.id][d+1]!=='深'){sc[m.id][d+1]='深'; shinMap[d+1]=cnt(shinMap,d+1)+1;}
+          continue;
+        }
+        if(w==='深'){
+          if(cnt(shinMap,d)>=shinCap||setW[m.id]>=setLimit) continue;
+          if(d===1){sc[m.id][1]='深'; shinMap[1]=cnt(shinMap,1)+1; setW[m.id]++; continue;}
+          if(sc[m.id][d-1]==='準'){sc[m.id][d]='深'; shinMap[d]=cnt(shinMap,d)+1; continue;}
+          if(!free(m,d-1)||cnt(junMap,d-1)>=junCap) continue;
+          sc[m.id][d-1]='準'; junMap[d-1]=cnt(junMap,d-1)+1; setW[m.id]++;
+          sc[m.id][d]='深'; shinMap[d]=cnt(shinMap,d)+1;
+          continue;
+        }
+        sc[m.id][d]=w;
+      }
+    });
+  }
+
+  if(mode===2&&mgmt.length>0){
+    for(var d0=1;d0<=days;d0++){
+      var avail=mgmt.some(function(L){
+        var v=sc[L.id][d0];
+        return !onLeave(L,d0)&&(v===undefined||v==='日'||v==='長'||v==='時');
+      });
+      if(!avail){
+        var drop=mgmt.filter(function(L){return sc[L.id][d0]==='休';})[0];
+        if(drop) delete sc[drop.id][d0];
+      }
+    }
+  }
+
+  var offPerDay={};
+  mgmt.forEach(function(L){
+    for(var d=1;d<=days;d++) if(sc[L.id][d]==='休') offPerDay[d]=(offPerDay[d]||0)+1;
+  });
+  mgmt.forEach(function(L,i){
+    var have=0;
+    for(var d=1;d<=days;d++) if(sc[L.id][d]==='休') have++;
+    var need=req[L.id]-have;
+    var mcap=Math.max(1,mgmt.length-1);
+    var blocked=function(d){
+      if(!free(L,d)) return true;
+      return mgmt.length>1&&(offPerDay[d]||0)>=mcap;
+    };
+    if(need>0){
+      var offs=pickSpread(days,need,i/Math.max(1,mgmt.length),blocked);
+      if(offs.length<need) notes.push(L.name+'さんの公休を'+req[L.id]+'日確保できませんでした。');
+      offs.forEach(function(d){sc[L.id][d]='休'; offPerDay[d]=(offPerDay[d]||0)+1;});
+    }
+    var fill=isShort(L)?'時':'日';
+    for(var d2=1;d2<=days;d2++) if(free(L,d2)) sc[L.id][d2]=fill;
+  });
+  if(mgmt.length===0) notes.push('看護師長・副看護師長が登録されていないため、日勤責任者の条件を満たせません。');
+  if(mgmt.length===1) notes.push('師長クラスが1名のため、公休日は日勤責任者の条件を満たせません。');
+
+  state.members.forEach(function(m){
+    for(var d=1;d<=days;d++){
+      var v=sc[m.id][d];
+      if(v==='準'){setCnt[m.id]++; lastN[m.id]=Math.max(lastN[m.id],d);}
+      if(v==='休') offCnt[m.id]++;
+      if(v==='長') choCnt[m.id]++;
+    }
+    if(sc[m.id][1]==='深') setCnt[m.id]++;
+  });
+
+  var d1Members=state.members.filter(function(m){return sc[m.id][1]==='深';});
+  var d1NR=d1Members.filter(function(m){return m.role!=='rookie';}).length;
+  var needD1=ns-d1NR;
+  if(needD1>0){
+    var candD1=pool.filter(function(s){return free(s,1)&&setCnt[s.id]<cap;});
+    var hasLeadD1=d1Members.some(leaderQ);
+    candD1.sort(function(a,b){
+      return setCnt[a.id]-setCnt[b.id]||(leaderQ(a)?1:0)-(leaderQ(b)?1:0)||a._seq-b._seq;
+    });
+    var pickedD1=[];
+    if(!hasLeadD1){
+      var ld=candD1.filter(leaderQ).sort(function(a,b){return setCnt[a.id]-setCnt[b.id];})[0];
+      if(ld) pickedD1.push(ld);
+    }
+    for(var i0=0;i0<candD1.length&&pickedD1.length<needD1;i0++){
+      if(pickedD1.indexOf(candD1[i0])<0) pickedD1.push(candD1[i0]);
+    }
+    pickedD1.forEach(function(s){
+      sc[s.id][1]='深'; setCnt[s.id]++; lastN[s.id]=1;
+      if(days>=2&&offCnt[s.id]<req[s.id]&&free(s,2)){sc[s.id][2]='休'; offCnt[s.id]++;}
+    });
+    if(d1NR+pickedD1.length<ns) notes.push('初日の深夜メンバーが'+(d1NR+pickedD1.length)+'名しか確保できませんでした。');
+    var d1After=state.members.filter(function(m){return sc[m.id][1]==='深';});
+    if(!d1After.some(leaderQ)) notes.push('初日の深夜にリーダーを配置できませんでした。');
+  }
+
+  rookies.forEach(function(r,ri){
+    if(setCnt[r.id]>=1){
+      if(setCnt[r.id]>1) notes.push(r.name+'さん（新人）の夜勤が'+setCnt[r.id]+'回になっています（月1回のみ）。');
+      return;
+    }
+    if(Object.keys(lvm[r.id]).length>=days) return;
+    var target=Math.round((ri+1)*days/(rookies.length+1));
+    var bestP=0,bestDist=1e9;
+    for(var p=2;p<=days-1;p++){
+      var taken=rookies.some(function(o){return o!==r&&sc[o.id][p]==='準';});
+      if(taken) continue;
+      if(!free(r,p-1)||!free(r,p)||!free(r,p+1)) continue;
+      var dist=Math.abs(p-target);
+      if(dist<bestDist){bestDist=dist;bestP=p;}
+    }
+    if(bestP){
+      sc[r.id][bestP-1]='長'; choCnt[r.id]++;
+      sc[r.id][bestP]='準'; setCnt[r.id]++; lastN[r.id]=bestP;
+      sc[r.id][bestP+1]='深';
+      if(bestP+2<=days&&offCnt[r.id]<req[r.id]&&free(r,bestP+2)){sc[r.id][bestP+2]='休'; offCnt[r.id]++;}
+    }else{
+      notes.push(r.name+'さん（新人）の夜勤（月1回）を配置できませんでした。');
+    }
+  });
+
+  state.members.forEach(function(m){
+    if(m.role==='chief'||m.role==='deputy') return;
+    for(var p2=2;p2<=days;p2++){
+      if(sc[m.id][p2]==='準'&&free(m,p2-1)){sc[m.id][p2-1]='長'; choCnt[m.id]++;}
+    }
+  });
+
+  function assignBlock(s,p){
+    if(p>1&&free(s,p-1)){sc[s.id][p-1]='長'; choCnt[s.id]++;}
+    sc[s.id][p]='準'; setCnt[s.id]++; lastN[s.id]=p;
+    if(p<days) sc[s.id][p+1]='深';
+    if(p+2<=days&&offCnt[s.id]<req[s.id]&&free(s,p+2)){sc[s.id][p+2]='休'; offCnt[s.id]++;}
+  }
+  var shortDays=0, leaderShortDays=0;
+  for(var p=1;p<=days;p++){
+    var team=state.members.filter(function(m){return sc[m.id][p]==='準';});
+    var curNR=team.filter(function(m){return m.role!=='rookie';}).length;
+    var hasLeader=team.some(leaderQ);
+    var need=ns-curNR;
+    if(need>0){
+      var cands=pool.filter(function(s){
+        if(setCnt[s.id]>=cap) return false;
+        if(!free(s,p)) return false;
+        if(p>1&&!free(s,p-1)&&sc[s.id][p-1]!=='長') return false;
+        if(p<days&&!free(s,p+1)) return false;
+        return true;
+      });
+      cands.sort(function(a,b){
+        var wa=(p>1&&sc[a.id][p-1]==='長')?0:1, wb=(p>1&&sc[b.id][p-1]==='長')?0:1;
+        if(wa!==wb) return wa-wb;
+        return setCnt[a.id]-setCnt[b.id]||(leaderQ(a)?1:0)-(leaderQ(b)?1:0)||lastN[a.id]-lastN[b.id]||a._seq-b._seq;
+      });
+      var picked=[];
+      if(!hasLeader){
+        var lead=cands.filter(leaderQ).sort(function(a,b){return setCnt[a.id]-setCnt[b.id];})[0];
+        if(lead) picked.push(lead);
+      }
+      for(var i=0;i<cands.length&&picked.length<need;i++){
+        if(picked.indexOf(cands[i])<0) picked.push(cands[i]);
+      }
+      var remain=need-picked.length;
+      if(remain>0&&mode===2){
+        var cand2=pool.filter(function(s){
+          if(picked.indexOf(s)>=0) return false;
+          if(setCnt[s.id]>=cap) return false;
+          var ds=[p]; if(p>1)ds.push(p-1); if(p<days)ds.push(p+1);
+          return ds.every(function(q){
+            if(onLeave(s,q)) return false;
+            var v=sc[s.id][q];
+            if(q===p-1&&v==='長') return true;
+            return v===undefined||v==='日'||v==='休';
+          });
+        });
+        cand2.sort(function(a,b){return setCnt[a.id]-setCnt[b.id]||a._seq-b._seq;});
+        cand2.slice(0,remain).forEach(function(s){
+          [p-1,p,p+1].forEach(function(q){
+            if(q<1||q>days) return;
+            var v=sc[s.id][q];
+            if(q===p-1&&v==='長') return;
+            if(v!==undefined){
+              if(v==='休') offCnt[s.id]--;
+              delete sc[s.id][q];
+            }
+          });
+          picked.push(s);
+        });
+      }
+      picked.forEach(function(s){assignBlock(s,p);});
+      var teamAfter=state.members.filter(function(m){return sc[m.id][p]==='準';});
+      if(teamAfter.filter(function(m){return m.role!=='rookie';}).length<ns) shortDays++;
+      if(!teamAfter.some(leaderQ)) leaderShortDays++;
+    }else if(!hasLeader){
+      leaderShortDays++;
+    }
+  }
+  if(shortDays>0) notes.push('準夜・深夜を'+ns+'名確保できない日が'+shortDays+'日あります（人員または夜勤上限の不足）。');
+  if(leaderShortDays>0) notes.push('準夜・深夜チームにリーダーを配置できない日が'+leaderShortDays+'日あります。');
+
+  var lastL=state.members.filter(function(m){return sc[m.id][days]==='長';});
+  var lastNR=lastL.filter(function(m){return m.role!=='rookie';}).length;
+  var needLast=ns-lastNR;
+  if(needLast>0){
+    var candLast=pool.filter(function(s){return free(s,days);});
+    var hasLeadLast=lastL.some(leaderQ);
+    candLast.sort(function(a,b){
+      return (setCnt[a.id]+choCnt[a.id])-(setCnt[b.id]+choCnt[b.id])||(leaderQ(a)?1:0)-(leaderQ(b)?1:0)||a._seq-b._seq;
+    });
+    var pickedLast=[];
+    if(!hasLeadLast){
+      var ll=candLast.filter(leaderQ)[0];
+      if(ll) pickedLast.push(ll);
+    }
+    for(var i3=0;i3<candLast.length&&pickedLast.length<needLast;i3++){
+      if(pickedLast.indexOf(candLast[i3])<0) pickedLast.push(candLast[i3]);
+    }
+    pickedLast.forEach(function(s){sc[s.id][days]='長'; choCnt[s.id]++;});
+    if(lastNR+pickedLast.length<ns) notes.push('最終日の長日勤（翌期間初日の準夜要員）が'+(lastNR+pickedLast.length)+'名です。');
+  }
+
+  pool.concat(rookies).concat(shorts).forEach(function(s){
+    var need=req[s.id]-offCnt[s.id];
+    if(need<=0) return;
+    var fd=[];
+    for(var d=1;d<=days;d++) if(free(s,d)) fd.push(d);
+    if(fd.length<need&&mode===2){
+      for(var d3=1;d3<=days&&fd.length<need;d3++){
+        var v3=sc[s.id][d3];
+        if((v3==='日'||v3==='時')&&!onLeave(s,d3)){delete sc[s.id][d3]; fd.push(d3);}
+      }
+      fd.sort(function(a,b){return a-b;});
+    }
+    if(fd.length<need) notes.push(s.name+'さんの公休が'+req[s.id]+'日確保できません（'+(offCnt[s.id]+fd.length)+'日のみ）。');
+    var take=Math.min(need,fd.length);
+    if(take<=0) return;
+    var step=fd.length/take, used={};
+    for(var i=0;i<take;i++){
+      var idx=Math.min(fd.length-1,Math.floor(i*step+step/2));
+      while(used[idx]) idx=(idx+1)%fd.length;
+      used[idx]=true;
+      sc[s.id][fd[idx]]='休'; offCnt[s.id]++;
+    }
+  });
+
+  if(mode===2){
+    pool.concat(rookies).forEach(function(s){
+      for(var d=1;d<days;d++){
+        if(sc[s.id][d]==='長'&&sc[s.id][d+1]!=='準'){
+          choCnt[s.id]--; delete sc[s.id][d];
+        }
+      }
+    });
+  }
+
+  pool.concat(rookies).forEach(function(s){
+    for(var d=1;d<=days;d++) if(free(s,d)) sc[s.id][d]='日';
+  });
+  shorts.forEach(function(s){
+    for(var d=1;d<=days;d++) if(free(s,d)) sc[s.id][d]='時';
+  });
+  if(leaveWishSkipped) notes.push('休暇期間と重なる希望勤務は無視しました。');
+  return {sc:sc,notes:notes};
+}
+function computeUnful(sc){
+  var res=[], days=pdays();
+  var wsrc=state.wishes[monthKey()]||{}, lvm=computeLeaveMap();
+  state.members.forEach(function(m){
+    var mw=wsrc[m.id];
+    if(!mw) return;
+    Object.keys(mw).forEach(function(k){
+      var d=+k;
+      if(!(d>=1&&d<=days)||!mw[k]) return;
+      if(lvm[m.id][d]) return;
+      var v=(sc[m.id]||{})[d]||'';
+      if(v!==mw[k]) res.push(m.name+'さん '+fmtD(d)+': 希望「'+SHIFTS[mw[k]].name+'」を反映できませんでした');
+    });
+  });
+  return res;
+}
+function doGenerate(mode){
+  var r=runGenerate(mode);
+  var unful=(mode===3)?[]:computeUnful(r.sc);
+  if(mode===1){
+    var issues=validateSc(r.sc);
+    if(unful.length>0||issues.length>0){
+      var reasons=unful.concat(issues.map(function(i){return i.msg;})).concat(r.notes);
+      showModal('① 希望を全て反映した勤務表は作成できませんでした',reasons,[
+        {label:'戻る'},
+        {label:'③ 希望なしで作成',fn:function(){doGenerate(3);}},
+        {label:'② 可能な限り反映して作成',primary:true,fn:function(){doGenerate(2);}}
+      ]);
+      return;
+    }
+  }
+  state.schedules[monthKey()]=r.sc;
+  var head='作成方式: '+(mode===1?'① 希望を全て反映':mode===2?'② 希望を可能な限り反映':'③ 希望を考慮しない');
+  loc.genNotes=[head].concat(r.notes).concat(unful);
+  save(); renderAll();
+}
+
+/* ---------- 描画 ---------- */
+var grid=document.getElementById('grid');
+var membersEl=document.getElementById('membersEl');
+
+function recommendedInfo(){
+  var days=pdays(), s=state.settings;
+  var rookies=state.members.filter(function(m){return m.role==='rookie'&&!isShort(m);}).length;
+  var setsNeeded=days*s.nightSize+s.nightSize-Math.min(rookies,days);
+  var cap=Math.max(1,s.nightCap);
+  return {
+    pool:Math.max(4*s.nightSize, Math.ceil(setsNeeded/cap)),
+    leaders:Math.ceil((days+2)/cap)
+  };
+}
+function renderMembers(){
+  var rc=state.settings.roleColors;
+  var html;
+  if(editable()){
+    html=state.members.map(function(m,i){
+      return '<div class="chip">'
+        +'<button class="icon mup" data-mid="'+m.id+'" title="左へ"'+(i===0?' disabled':'')+'>◀</button>'
+        +'<button class="icon mdown" data-mid="'+m.id+'" title="右へ"'+(i===state.members.length-1?' disabled':'')+'>▶</button>'
+        +'<input class="mname" data-mid="'+m.id+'" value="'+esc(m.name)+'" style="background:'+esc(rc[m.role]||'#fff')+'">'
+        +'<select class="mrole" data-mid="'+m.id+'">'
+        +'<option value="chief"'+(m.role==='chief'?' selected':'')+'>師長</option>'
+        +'<option value="deputy"'+(m.role==='deputy'?' selected':'')+'>副師長</option>'
+        +'<option value="leader"'+(m.role==='leader'?' selected':'')+'>一般職(リーダー)</option>'
+        +'<option value="staff"'+(m.role==='staff'?' selected':'')+'>一般職</option>'
+        +'<option value="rookie"'+(m.role==='rookie'?' selected':'')+'>新人</option>'
+        +'</select>'
+        +'<button class="icon mpage" data-mid="'+m.id+'" title="個人ページ">📝</button>'
+        +'<button class="mdel" data-mid="'+m.id+'" title="削除">×</button>'
+        +'</div>';
+    }).join('');
+    html+='<button id="btnAdd">＋ メンバー追加</button>';
+  }else{
+    html=state.members.map(function(m){
+      return '<div class="chip">'
+        +'<span style="padding:2px 8px;border-radius:4px;font-size:13px;background:'+esc(rc[m.role]||'#fff')+'">'+esc(m.name)+'</span>'
+        +'<span style="font-size:11px;color:#546e7a">'+ROLE_NAME[m.role]+'</span>'
+        +'<button class="icon mpage" data-mid="'+m.id+'" title="個人ページ">📝</button>'
+        +'</div>';
+    }).join('');
+  }
+  membersEl.innerHTML=html;
+  document.getElementById('memberCount').textContent=state.members.length;
+  var poolN=state.members.filter(function(m){return (m.role==='leader'||m.role==='staff')&&!isShort(m);}).length;
+  var leadN=state.members.filter(function(m){return m.role==='leader'&&!isShort(m);}).length;
+  var rec=recommendedInfo();
+  document.getElementById('staffInfo').textContent=
+    '夜勤要員 '+poolN+'名（推奨 '+rec.pool+'名以上）／うちリーダー '+leadN+'名（推奨 '+rec.leaders+'名以上）';
+}
+function nightSets(mid){
+  var days=pdays(), jun=0;
+  for(var d=1;d<=days;d++) if(getCell(mid,d)==='準') jun++;
+  return jun+(getCell(mid,1)==='深'?1:0);
+}
+function renderGrid(issues){
+  var days=pdays();
+  var lvm=computeLeaveMap();
+  var req=requiredOffMap();
+  var cap=state.settings.nightCap;
+  var violSet={};
+  issues.forEach(function(i){i.cells.forEach(function(c){violSet[c[0]+':'+c[1]]=true;});});
+  var h='<thead><tr><th class="sticky-col">名前</th><th>役職</th>';
+  var d;
+  for(d=1;d<=days;d++){
+    var dt=dateOf(d);
+    var wd=dt.getDay();
+    var lbl=(d===1||dt.getDate()===1)?(dt.getMonth()+1)+'/'+dt.getDate():dt.getDate();
+    h+='<th class="'+(wd===0?'sun':wd===6?'sat':'')+'">'+lbl+'<br><span>'+WD[wd]+'</span></th>';
+  }
+  h+='<th>日</th><th>長</th><th>準</th><th>深</th><th>時</th><th>休</th><th>夜勤</th></tr></thead><tbody>';
+  var rc=state.settings.roleColors;
+  var drag=editable()?' draggable="true"':'';
+  state.members.forEach(function(m){
+    var bg=' style="background:'+esc(rc[m.role]||'#fff')+'"';
+    h+='<tr class="mrow" data-mid="'+m.id+'">'
+      +'<td class="sticky-col mopen" data-mid="'+m.id+'"'+drag+bg+' title="クリック: 個人ページ'+(editable()?'／ドラッグ: 並び替え':'')+'">'+esc(m.name)+'</td>'
+      +'<td class="role"'+bg+'>'+ROLE_NAME[m.role]+(isShort(m)?'・時短':'')+'</td>';
+    var cnt={'日':0,'長':0,'準':0,'深':0,'時':0,'休':0};
+    for(var d=1;d<=days;d++){
+      var lvL=lvm[m.id][d];
+      var v=getCell(m.id,d);
+      if(lvL&&!v){
+        h+='<td class="cell s-leave" data-lv="1" title="'+esc(lvL)+'">'+esc(lvL.charAt(0))+'</td>';
+        continue;
+      }
+      if(v) cnt[v]++;
+      var cls=v?SHIFTS[v].cls:'';
+      var w=getWish(m.id,d);
+      var wcls='', wtitle='';
+      if(w){
+        wcls=(v===w)?' wmatch':' wmiss';
+        wtitle=' title="希望: '+SHIFTS[w].name+'"';
+      }else if(v==='時'&&m.short){
+        wtitle=' title="時短 '+esc(m.short.from||'')+'〜'+esc(m.short.to||'')+'"';
+      }
+      var vio=violSet[m.id+':'+d]?' viol':'';
+      h+='<td class="cell '+cls+wcls+vio+'" data-mid="'+m.id+'" data-d="'+d+'"'+wtitle+'>'+v+'</td>';
+    }
+    var offBad=cnt['休']!==req[m.id]?' bad':'';
+    var sets=nightSets(m.id);
+    var setBad=(m.role==='rookie'?sets>1:sets>cap)?' bad':'';
+    h+='<td class="cnt">'+cnt['日']+'</td><td class="cnt">'+cnt['長']+'</td><td class="cnt">'+cnt['準']+'</td><td class="cnt">'+cnt['深']+'</td><td class="cnt">'+cnt['時']+'</td>'
+      +'<td class="cnt'+offBad+'">'+cnt['休']+'</td><td class="cnt'+setBad+'">'+sets+'回</td></tr>';
+  });
+  h+='</tbody><tfoot>';
+  CODES.forEach(function(c){
+    h+='<tr><td class="sticky-col">'+SHIFTS[c].name+' 計</td><td></td>';
+    for(var d=1;d<=days;d++){
+      var nr=0, rk=0;
+      state.members.forEach(function(m){
+        if(getCell(m.id,d)===c){if(m.role==='rookie')rk++;else nr++;}
+      });
+      var bad=(c==='準'||c==='深')&&state.settings.rules.nightCount&&(nr!==state.settings.nightSize||rk>1)?' bad':'';
+      h+='<td class="fcnt'+bad+'">'+(nr+rk)+'</td>';
+    }
+    h+='<td colspan="7"></td></tr>';
+  });
+  h+='</tfoot>';
+  grid.innerHTML=h;
+}
+function renderWarnings(issues){
+  var el=document.getElementById('warnings');
+  var h='';
+  if(loc.genNotes&&loc.genNotes.length){
+    h+='<div class="note-box"><h3>ℹ 自動作成メモ</h3><ul>'
+      +loc.genNotes.map(function(n){return '<li>'+esc(n)+'</li>';}).join('')+'</ul></div>';
+  }
+  if(!monthHasData()){
+    h+='<div class="empty-box">この期間の勤務表はまだありません。'+(editable()?'「⚡ 自動作成」を押すか、セルをクリックして入力してください。':'')+'</div>';
+  }else if(issues.length===0){
+    h+='<div class="ok-box">✔ すべての条件を満たしています。</div>';
+  }else{
+    h+='<div class="warn-box"><h3>⚠ 条件違反が '+issues.length+' 件あります</h3><ul>'
+      +issues.map(function(i){return '<li>'+esc(i.msg)+'</li>';}).join('')+'</ul></div>';
+  }
+  el.innerHTML=h;
+}
+function viewMember(){
+  return state.members.filter(function(x){return x.id===loc.view;})[0]||null;
+}
+function renderMemberPage(){
+  var m=viewMember();
+  var days=pdays(), lvm=computeLeaveMap();
+  var self=curMember()&&curMember().id===m.id;
+  document.getElementById('mvName').textContent=(self?'👤 マイページ — ':'')+m.name+'さん（'+ROLE_NAME[m.role]+'）';
+  document.getElementById('mvMonth').textContent=periodLabel();
+  var wsum=0;
+  var mw=(state.wishes[monthKey()]||{})[m.id]||{};
+  Object.keys(mw).forEach(function(k){if(+k<=days&&mw[k])wsum++;});
+  document.getElementById('wishSummary').textContent='この期間の希望: '+wsum+'件';
+  document.getElementById('wishHint').textContent=wishEditableFor(m)
+    ?'日付をクリックすると選択メニューが開きます。希望休はここで入力します。'
+    :'このページの希望は本人・師長・管理者のみ変更できます。';
+  // 基本情報
+  var info='';
+  if(editable()){
+    info+='<div class="settings-row" style="margin-top:2px">'
+      +'<label><input type="checkbox" id="shortOn"'+(isShort(m)?' checked':'')+'> 時短勤務にする</label>'
+      +'<label>勤務時間 <input type="time" id="shortFrom" value="'+esc(m.short.from||'09:00')+'"'+(isShort(m)?'':' disabled')+'>'
+      +' 〜 <input type="time" id="shortTo" value="'+esc(m.short.to||'16:00')+'"'+(isShort(m)?'':' disabled')+'></label>'
+      +'</div>';
+  }else{
+    info+='<div class="info-line" style="margin-top:2px">時短勤務: '+(isShort(m)?esc(m.short.from||'')+'〜'+esc(m.short.to||''):'なし')+'</div>';
+  }
+  var pwRow='';
+  if(self) pwRow+='<button id="btnPwSelf">🔑 自分のパスワードを変更</button>';
+  if(isAdmin()) pwRow+='<button id="btnPwReset">🔑 パスワードをリセット（管理者）</button>';
+  if(pwRow){
+    info+='<div class="settings-row">'+pwRow
+      +'<span style="font-size:12px;color:#546e7a">パスワード: '+(m.pw?'設定済み':'未設定')+'</span></div>';
+  }else{
+    info+='<div class="info-line">パスワード: '+(m.pw?'設定済み':'未設定')+'</div>';
+  }
+  document.getElementById('mvInfo').innerHTML=info;
+  // 希望カレンダー
+  var firstWd=dateOf(1).getDay();
+  var h='<tr>'+WD.map(function(w,i){return '<th class="'+(i===0?'sun':i===6?'sat':'')+'">'+w+'</th>';}).join('')+'</tr><tr>';
+  for(var i=0;i<firstWd;i++) h+='<td class="blank"></td>';
+  for(var d=1;d<=days;d++){
+    var dt=dateOf(d);
+    var wd=dt.getDay();
+    if(wd===0&&d!==1) h+='</tr><tr>';
+    var lbl=(d===1||dt.getDate()===1)?(dt.getMonth()+1)+'/'+dt.getDate():dt.getDate();
+    var lvL=lvm[m.id][d];
+    if(lvL){
+      h+='<td class="wday leave"><span class="dnum">'+lbl+'</span><span class="wval">'+esc(lvL)+'</span></td>';
+    }else{
+      var w=getWish(m.id,d);
+      var cls=w?(' '+SHIFTS[w].cls):'';
+      h+='<td class="wday'+cls+'" data-d="'+d+'"><span class="dnum">'+lbl+'</span><span class="wval">'+(w?SHIFTS[w].name:'')+'</span></td>';
+    }
+  }
+  h+='</tr>';
+  document.getElementById('wishCal').innerHTML=h;
+  // 休暇リスト
+  var lh;
+  if(editable()){
+    lh=(m.leaves||[]).map(function(L,i){
+      return '<div class="leave-row">'
+        +'<input type="date" class="lvFrom" data-i="'+i+'" value="'+esc(L.from||'')+'">'
+        +'<span>〜</span>'
+        +'<input type="date" class="lvTo" data-i="'+i+'" value="'+esc(L.to||'')+'">'
+        +'<input type="text" class="lvLabel" list="leaveLabels" data-i="'+i+'" value="'+esc(L.label||'')+'" placeholder="理由（産休など）">'
+        +'<button class="lvDel danger" data-i="'+i+'">削除</button>'
+        +'</div>';
+    }).join('');
+  }else{
+    lh=(m.leaves||[]).map(function(L){
+      return '<div class="leave-row">'+esc(L.from||'（開始未定）')+' 〜 '+esc(L.to||'（終了未定）')+'　'+esc(L.label||'休暇')+'</div>';
+    }).join('');
+  }
+  document.getElementById('leaveList').innerHTML=lh||'<div class="info-line">登録された休暇期間はありません。</div>';
+  document.getElementById('btnAddLeave').style.display=editable()?'':'none';
+}
+function renderAll(){
+  // ログイン画面
+  var loggedIn=!!loc.session;
+  document.getElementById('loginOverlay').className=loggedIn?'':'show';
+  if(!loggedIn){
+    var sel=document.getElementById('loginUser');
+    sel.innerHTML='<option value="__admin">🔧 管理者</option>'
+      +state.members.map(function(m){return '<option value="'+m.id+'">'+esc(m.name)+'（'+ROLE_NAME[m.role]+'）</option>';}).join('');
+    document.getElementById('loginPw').value='';
+    document.getElementById('loginErr').textContent='';
+  }
+  document.getElementById('monthLabel').textContent=periodLabel();
+  document.getElementById('printTitle').textContent='勤務表　'+periodLabel();
+  document.getElementById('setOff').value=state.settings.offDays;
+  document.getElementById('setNight').value=state.settings.nightSize;
+  document.getElementById('setCap').value=state.settings.nightCap;
+  document.getElementById('setStart').value=state.settings.startDay;
+  ROLE_KEYS.forEach(function(r){document.getElementById('col_'+r).value=state.settings.roleColors[r];});
+  var ed=editable();
+  document.getElementById('rulesEl').innerHTML='<span style="font-size:13px;width:100%">条件チェック（外すと警告の対象外）:</span>'
+    +RULE_DEFS.map(function(r){
+      return '<label><input type="checkbox" class="rulechk" data-r="'+r[0]+'"'
+        +(state.settings.rules[r[0]]?' checked':'')+(ed?'':' disabled')+'> '+r[1]+'</label>';
+    }).join('');
+  // ユーザー表示
+  var chip=document.getElementById('userChip');
+  var my=document.getElementById('btnMyPage');
+  var lo=document.getElementById('btnLogout');
+  if(isAdmin()){
+    chip.textContent='🔧 管理者';
+    my.style.display='none'; lo.style.display='';
+  }else if(curMember()){
+    chip.textContent='👤 '+curMember().name+'さん';
+    my.style.display=''; lo.style.display='';
+  }else{
+    chip.textContent=''; my.style.display='none'; lo.style.display='none';
+  }
+  document.getElementById('btnGen').style.display=ed?'':'none';
+  document.getElementById('btnClear').style.display=ed?'':'none';
+  document.getElementById('settingsDetails').style.display=ed?'':'none';
+  document.getElementById('wishImportRow').style.display=ed?'':'none';
+  document.getElementById('adminPwRow').style.display=isAdmin()?'':'none';
+  document.getElementById('adminPwInfo').textContent=state.adminPass?'設定済み':'未設定（必ず設定してください）';
+  document.getElementById('cloudRow').style.display=isAdmin()?'':'none';
+  if(isAdmin()){
+    var cc=loc.cloud||{};
+    document.getElementById('cf_apiKey').value=cc.apiKey||'';
+    document.getElementById('cf_authDomain').value=cc.authDomain||'';
+    document.getElementById('cf_projectId').value=cc.projectId||'';
+    document.getElementById('cf_wardId').value=cc.wardId||'';
+  }
+  renderCloudUI();
+  ['setOff','setNight','setCap','setStart','btnColReset','btnImport'].forEach(function(id){
+    document.getElementById(id).disabled=!ed;
+  });
+  ROLE_KEYS.forEach(function(r){document.getElementById('col_'+r).disabled=!ed;});
+  // 表示切替
+  var isMember=loc.view!=='main'&&loc.view!=='manual'&&state.members.some(function(m){return m.id===loc.view;});
+  if(loc.view!=='manual'&&!isMember) loc.view='main';
+  document.getElementById('mainView').style.display=loc.view==='main'?'':'none';
+  document.getElementById('memberView').style.display=isMember?'block':'none';
+  document.getElementById('manualView').style.display=loc.view==='manual'?'block':'none';
+  if(loc.view==='main'){
+    renderMembers();
+    var issues=validate();
+    renderGrid(issues);
+    renderWarnings(issues);
+  }else if(isMember){
+    renderMemberPage();
+  }
+}
+
+/* ---------- モーダル・選択メニュー ---------- */
+var overlay=document.getElementById('overlay');
+function showModal(title,lines,buttons){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalList').innerHTML=lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('');
+  var inp=document.getElementById('modalInput');
+  inp.style.display='none'; inp.value='';
+  var foot=document.getElementById('modalFoot');
+  foot.innerHTML='';
+  buttons.forEach(function(b){
+    var btn=document.createElement('button');
+    btn.textContent=b.label;
+    if(b.primary) btn.className='primary';
+    btn.addEventListener('click',function(){
+      overlay.classList.remove('show');
+      if(b.fn) b.fn();
+    });
+    foot.appendChild(btn);
+  });
+  overlay.classList.add('show');
+}
+function showPrompt(title,lines,onOk){
+  showModal(title,lines,[
+    {label:'キャンセル'},
+    {label:'OK',primary:true,fn:function(){onOk(document.getElementById('modalInput').value);}}
+  ]);
+  var inp=document.getElementById('modalInput');
+  inp.style.display='block';
+  setTimeout(function(){inp.focus();},60);
+}
+document.getElementById('modalInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){
+    var pb=document.querySelector('#modalFoot button.primary');
+    if(pb) pb.click();
+  }
+});
+function gated(action){
+  var issues=validate();
+  if(issues.length>0){
+    showModal('⚠ 条件違反が'+issues.length+'件あります',
+      issues.map(function(i){return i.msg;}),
+      [{label:'戻る'},{label:'このまま実行',primary:true,fn:action}]);
+  }else action();
+}
+// 選択メニュー（ドロップダウン）
+var cellMenu=document.getElementById('cellMenu');
+function showCellMenu(anchor,options,onPick){
+  cellMenu.innerHTML=options.map(function(o,i){
+    var sw=o.v?'<span class="sw2 '+SHIFTS[o.v].cls+'"></span>':'<span class="sw2" style="background:#fff"></span>';
+    return '<button data-i="'+i+'">'+sw+'<span>'+esc(o.label||(o.v?SHIFTS[o.v].name:'なし'))+'</span></button>';
+  }).join('');
+  cellMenu.style.display='block';
+  var r=anchor.getBoundingClientRect();
+  var mw=cellMenu.offsetWidth, mh=cellMenu.offsetHeight;
+  var x=Math.min(r.left, window.innerWidth-mw-8);
+  var y=r.bottom+4;
+  if(y+mh>window.innerHeight-8) y=Math.max(8,r.top-mh-4);
+  cellMenu.style.left=Math.max(4,x)+'px';
+  cellMenu.style.top=y+'px';
+  cellMenu.onclick=function(e){
+    var b=e.target.closest('button');
+    if(!b) return;
+    hideCellMenu();
+    onPick(options[+b.dataset.i]);
+  };
+}
+function hideCellMenu(){cellMenu.style.display='none'; cellMenu.onclick=null;}
+document.addEventListener('click',function(e){
+  if(cellMenu.style.display==='block'&&!cellMenu.contains(e.target)) hideCellMenu();
+},true);
+window.addEventListener('scroll',hideCellMenu,true);
+
+/* ---------- 出力・データ管理 ---------- */
+function buildCSV(){
+  var days=pdays();
+  var lvm=computeLeaveMap();
+  var rows=[];
+  var head=['名前','役職'];
+  var d;
+  for(d=1;d<=days;d++) head.push(fmtD(d)+'('+WD[dateOf(d).getDay()]+')');
+  head=head.concat(['日勤','長日勤','準夜','深夜','時短','公休','夜勤(回)']);
+  rows.push(head);
+  state.members.forEach(function(m){
+    var r=[m.name,ROLE_NAME[m.role]+(isShort(m)?'・時短':'')];
+    var cnt={'日':0,'長':0,'準':0,'深':0,'時':0,'休':0};
+    for(var d=1;d<=days;d++){
+      var v=getCell(m.id,d);
+      var lvL=lvm[m.id][d];
+      if(v) cnt[v]++;
+      r.push(v||(lvL||''));
+    }
+    r=r.concat([cnt['日'],cnt['長'],cnt['準'],cnt['深'],cnt['時'],cnt['休'],nightSets(m.id)]);
+    rows.push(r);
+  });
+  CODES.forEach(function(c){
+    var r=[SHIFTS[c].name+' 計',''];
+    for(var d=1;d<=days;d++){
+      var n=0;
+      state.members.forEach(function(m){if(getCell(m.id,d)===c)n++;});
+      r.push(n);
+    }
+    rows.push(r);
+  });
+  return '﻿'+rows.map(function(r){
+    return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"';}).join(',');
+  }).join('\r\n');
+}
+function download(blob,name){
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function downloadCSV(){
+  download(new Blob([buildCSV()],{type:'text/csv;charset=utf-8'}),'勤務表_'+monthKey()+'.csv');
+}
+function exportData(){
+  var now=new Date();
+  var stamp=now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2);
+  download(new Blob([JSON.stringify(state,null,1)],{type:'application/json'}),'勤務表メーカーデータ_'+stamp+'.json');
+}
+function importData(file){
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var s=JSON.parse(reader.result);
+      if(!s||!s.members||!s.schedules) throw new Error('bad');
+      showModal('確認',['読み込んだデータで現在の全データを置き換えます。'],
+        [{label:'戻る'},{label:'置き換える',primary:true,fn:function(){
+          var sess=loc.session;
+          state=normalize(Object.assign(defaultState(),s));
+          loc.session=sess; // 現在のログインは維持
+          if(loc.session&&loc.session.type==='member'&&!state.members.some(function(m){return m.id===loc.session.mid;})) loc.session=null;
+          save(); renderAll();
+        }}]);
+    }catch(e){
+      showModal('エラー',['ファイルを読み込めませんでした。このソフトで書き出したJSONファイルを選んでください。'],[{label:'閉じる'}]);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ---------- イベント ---------- */
+// ログイン
+document.getElementById('btnLogin').addEventListener('click',function(){
+  var v=document.getElementById('loginUser').value;
+  var pw=document.getElementById('loginPw').value;
+  var ok=false, firstAdmin=false;
+  if(v==='__admin'){
+    ok=pw===(state.adminPass||'');
+    firstAdmin=ok&&!state.adminPass;
+    if(ok) loc.session={type:'admin'};
+  }else{
+    var m=state.members.filter(function(x){return x.id===v;})[0];
+    if(m){
+      ok=pw===(m.pw||'');
+      if(ok) loc.session={type:'member',mid:m.id};
+    }
+  }
+  if(!ok){
+    document.getElementById('loginErr').textContent='パスワードが違います。';
+    return;
+  }
+  save(); renderAll();
+  if(firstAdmin){
+    showModal('管理者パスワードが未設定です',
+      ['誰でも管理者としてログインできる状態です。','⚙設定の「🔑 管理者パスワードの変更」から必ず設定してください。'],
+      [{label:'あとで'},{label:'いま設定する',primary:true,fn:changeAdminPw}]);
+  }
+});
+document.getElementById('loginPw').addEventListener('keydown',function(e){
+  if(e.key==='Enter') document.getElementById('btnLogin').click();
+});
+document.getElementById('btnLogout').addEventListener('click',function(){
+  loc.session=null; loc.view='main';
+  save(); renderAll();
+});
+document.getElementById('btnMyPage').addEventListener('click',function(){
+  var m=curMember();
+  if(!m) return;
+  loc.view=m.id; save(); renderAll();
+});
+function changeAdminPw(){
+  showPrompt('🔑 管理者パスワードの変更',['新しい管理者パスワードを入力してください。'],function(v){
+    if(!v){showModal('エラー',['パスワードが空です。変更を中止しました。'],[{label:'閉じる'}]); return;}
+    state.adminPass=v;
+    save(); renderAll();
+    showModal('設定しました',['管理者パスワードを設定しました。忘れないようにメモしてください。'],[{label:'閉じる'}]);
+  });
+}
+document.getElementById('btnAdminPw').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  changeAdminPw();
+});
+// クラウド同期の設定
+document.getElementById('btnCloudSave').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  var cfg={
+    apiKey:document.getElementById('cf_apiKey').value.trim(),
+    authDomain:document.getElementById('cf_authDomain').value.trim(),
+    projectId:document.getElementById('cf_projectId').value.trim(),
+    wardId:document.getElementById('cf_wardId').value.trim()
+  };
+  if(loc.cloud&&loc.cloud.emu) cfg.emu=loc.cloud.emu;
+  if(!cfg.apiKey||!cfg.projectId||!cfg.wardId){
+    showModal('入力が足りません',['apiKey・projectId・病棟ID は必須です。','Firebaseの設定手順は「📖使い方」の「クラウド同期」を見てください。'],[{label:'閉じる'}]);
+    return;
+  }
+  loc.cloud=cfg;
+  localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
+  showModal('接続します',['設定を保存しました。ページを再読み込みして接続します。'],
+    [{label:'OK',primary:true,fn:function(){location.reload();}}]);
+});
+document.getElementById('btnCloudLink').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  if(!cloudConfigured()){
+    showModal('共有リンク',['先に「保存して接続」でクラウド同期を設定してください。'],[{label:'閉じる'}]);
+    return;
+  }
+  var cfg={apiKey:loc.cloud.apiKey,authDomain:loc.cloud.authDomain,projectId:loc.cloud.projectId,wardId:loc.cloud.wardId};
+  var url=location.origin+location.pathname+'#cfg='+encodeURIComponent(JSON.stringify(cfg));
+  var lines;
+  if(location.protocol==='file:'){
+    lines=['このアプリはまだWebに公開されていないため、リンクを配っても他の人は開けません。',
+      '「📖使い方」→「クラウド同期」のとおりWebに公開（GitHub Pagesなど）した後、公開したURLでこの画面を開いてリンクを作ってください。'];
+    showModal('⚠ Web公開がまだです',lines,[{label:'閉じる'}]);
+    return;
+  }
+  lines=['このリンクを職員にLINEなどで送ると、開くだけで接続設定済みの状態になります。',
+    '（リンクを知っている人はデータにアクセスできます。部外者に渡さないでください）','',url];
+  var copy=function(){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url);
+    }
+  };
+  showModal('🔗 共有用リンク',lines,[
+    {label:'閉じる'},
+    {label:'コピーする',primary:true,fn:copy}
+  ]);
+});
+document.getElementById('btnCloudOff').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  if(!loc.cloud) return;
+  showModal('同期の解除',['この端末のクラウド同期を解除します。','クラウド上のデータは消えません。この端末は解除時点のデータで単独動作になります。'],
+    [{label:'戻る'},{label:'解除する',primary:true,fn:function(){
+      loc.cloud=null;
+      localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
+      location.reload();
+    }}]);
+});
+
+document.getElementById('btnPrev').addEventListener('click',function(){
+  loc.month--; if(loc.month<1){loc.month=12;loc.year--;}
+  loc.genNotes=[]; save(); renderAll();
+});
+document.getElementById('btnNext').addEventListener('click',function(){
+  loc.month++; if(loc.month>12){loc.month=1;loc.year++;}
+  loc.genNotes=[]; save(); renderAll();
+});
+document.getElementById('btnGen').addEventListener('click',function(){
+  if(!canEdit()) return;
+  var lines=[
+    '① 希望を全て反映 … 反映できないときは作成せず理由を表示します。',
+    '② 可能な限り反映 … 条件を優先し、外した希望は一覧表示します。',
+    '③ 希望を考慮しない … 条件のみで作成します。',
+    '※ 長期休暇はどの方式でも反映されます。'
+  ];
+  if(monthHasData()) lines.push('※ 現在の内容は上書きされます。');
+  showModal('⚡ 自動作成 — 方式を選んでください',lines,[
+    {label:'戻る'},
+    {label:'③ 希望なし',fn:function(){doGenerate(3);}},
+    {label:'② 可能な限り反映',fn:function(){doGenerate(2);}},
+    {label:'① 希望を全て反映',primary:true,fn:function(){doGenerate(1);}}
+  ]);
+});
+document.getElementById('btnClear').addEventListener('click',function(){
+  if(!canEdit()) return;
+  if(!monthHasData()) return;
+  showModal('確認',[periodLabel()+' の勤務表をすべて消去します。'],
+    [{label:'戻る'},{label:'消去する',primary:true,fn:function(){
+      state.schedules[monthKey()]={}; loc.genNotes=[]; save(); renderAll();
+    }}]);
+});
+document.getElementById('btnCsv').addEventListener('click',function(){gated(downloadCSV);});
+document.getElementById('btnPrint').addEventListener('click',function(){gated(function(){window.print();});});
+document.getElementById('btnBack').addEventListener('click',function(){
+  loc.view='main'; save(); renderAll();
+});
+document.getElementById('btnManual').addEventListener('click',function(){
+  loc.view='manual'; save(); renderAll();
+});
+document.getElementById('btnManualBack').addEventListener('click',function(){
+  loc.view='main'; save(); renderAll();
+});
+document.getElementById('btnExport').addEventListener('click',exportData);
+document.getElementById('btnImport').addEventListener('click',function(){
+  if(!canEdit()) return;
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change',function(){
+  if(this.files&&this.files[0]) importData(this.files[0]);
+  this.value='';
+});
+
+// 設定
+['setOff','setNight','setCap','setStart'].forEach(function(id){
+  document.getElementById(id).addEventListener('change',function(){
+    if(!canEdit()){renderAll(); return;}
+    var v=parseInt(this.value,10);
+    if(isNaN(v)||v<0) v=0;
+    if(id==='setOff') state.settings.offDays=v;
+    if(id==='setNight') state.settings.nightSize=Math.max(1,v);
+    if(id==='setCap') state.settings.nightCap=Math.max(1,v);
+    if(id==='setStart') state.settings.startDay=Math.min(28,Math.max(1,v||1));
+    save(); renderAll();
+  });
+});
+document.getElementById('rulesEl').addEventListener('change',function(e){
+  if(!e.target.classList.contains('rulechk')) return;
+  if(!canEdit()){renderAll(); return;}
+  state.settings.rules[e.target.dataset.r]=e.target.checked;
+  save(); renderAll();
+});
+ROLE_KEYS.forEach(function(r){
+  document.getElementById('col_'+r).addEventListener('change',function(){
+    if(!canEdit()){renderAll(); return;}
+    state.settings.roleColors[r]=this.value;
+    save(); renderAll();
+  });
+});
+document.getElementById('btnColReset').addEventListener('click',function(){
+  if(!canEdit()) return;
+  state.settings.roleColors=defaultRoleColors();
+  save(); renderAll();
+});
+
+// メンバー編集
+membersEl.addEventListener('change',function(e){
+  if(!canEdit()){renderAll(); return;}
+  var mid=e.target.dataset.mid;
+  if(!mid) return;
+  var m=state.members.filter(function(x){return x.id===mid;})[0];
+  if(!m) return;
+  if(e.target.classList.contains('mname')) m.name=e.target.value||'（無名）';
+  if(e.target.classList.contains('mrole')) m.role=e.target.value;
+  save(); renderAll();
+});
+membersEl.addEventListener('click',function(e){
+  var t=e.target;
+  if(t.id==='btnAdd'){
+    if(!canEdit()) return;
+    state.members.push({id:'m'+(state.nextId++),name:'新規'+state.members.length,role:'staff',leaves:[],short:{on:false,from:'09:00',to:'16:00'},pw:''});
+    save(); renderAll();
+    return;
+  }
+  var mid=t.dataset.mid;
+  if(!mid) return;
+  if(t.classList.contains('mpage')){
+    loc.view=mid; save(); renderAll(); return;
+  }
+  if(!canEdit()) return;
+  var idx=state.members.findIndex(function(x){return x.id===mid;});
+  if(idx<0) return;
+  if(t.classList.contains('mup')&&idx>0){
+    var tmp=state.members[idx-1]; state.members[idx-1]=state.members[idx]; state.members[idx]=tmp;
+    save(); renderAll(); return;
+  }
+  if(t.classList.contains('mdown')&&idx<state.members.length-1){
+    var tmp2=state.members[idx+1]; state.members[idx+1]=state.members[idx]; state.members[idx]=tmp2;
+    save(); renderAll(); return;
+  }
+  if(t.classList.contains('mdel')){
+    var m=state.members[idx];
+    showModal('確認',[m.name+'さんを削除します。全期間の勤務データ・希望・休暇も消えます。'],
+      [{label:'戻る'},{label:'削除する',primary:true,fn:function(){
+        state.members=state.members.filter(function(x){return x.id!==mid;});
+        Object.keys(state.schedules).forEach(function(k){delete state.schedules[k][mid];});
+        Object.keys(state.wishes).forEach(function(k){delete state.wishes[k][mid];});
+        if(loc.session&&loc.session.type==='member'&&loc.session.mid===mid) loc.session=null;
+        save(); renderAll();
+      }}]);
+  }
+});
+
+// 勤務表セル: ドロップダウン入力／名前クリック
+grid.addEventListener('click',function(e){
+  var name=e.target.closest('td.mopen');
+  if(name){loc.view=name.dataset.mid; save(); renderAll(); return;}
+  var td=e.target.closest('td.cell');
+  if(!td||td.dataset.lv) return;
+  if(!canEdit()) return;
+  var mid=td.dataset.mid, d=parseInt(td.dataset.d,10);
+  if(!mid) return;
+  var m=state.members.filter(function(x){return x.id===mid;})[0];
+  var opts=CODES.filter(function(c){return c!=='時'||isShort(m);})
+    .map(function(c){return {v:c};});
+  if(isShort(m)) opts=[{v:'時'},{v:'休'},{v:'日'},{v:'長'},{v:'準'},{v:'深'}];
+  opts.push({v:'',label:'（クリア）'});
+  showCellMenu(td,opts,function(o){
+    setCell(mid,d,o.v);
+    save(); renderAll();
+  });
+  e.stopPropagation();
+});
+// 行ドラッグ並び替え
+var dragMid=null;
+function clearDropMarks(){
+  grid.querySelectorAll('.drop-above,.drop-below').forEach(function(tr){tr.classList.remove('drop-above','drop-below');});
+  grid.querySelectorAll('.drag-src').forEach(function(tr){tr.classList.remove('drag-src');});
+}
+grid.addEventListener('dragstart',function(e){
+  var td=e.target.closest?e.target.closest('td.mopen'):null;
+  if(!td||!editable()){e.preventDefault(); return;}
+  dragMid=td.dataset.mid;
+  e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',dragMid);}catch(err){}
+  var tr=td.closest('tr');
+  if(tr) tr.classList.add('drag-src');
+});
+grid.addEventListener('dragover',function(e){
+  if(!dragMid) return;
+  var tr=e.target.closest?e.target.closest('tr.mrow'):null;
+  if(!tr) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  grid.querySelectorAll('.drop-above,.drop-below').forEach(function(x){x.classList.remove('drop-above','drop-below');});
+  var rect=tr.getBoundingClientRect();
+  tr.classList.add((e.clientY-rect.top)<rect.height/2?'drop-above':'drop-below');
+});
+grid.addEventListener('drop',function(e){
+  if(!dragMid) return;
+  var tr=e.target.closest?e.target.closest('tr.mrow'):null;
+  clearDropMarks();
+  if(!tr||tr.dataset.mid===dragMid){dragMid=null; return;}
+  e.preventDefault();
+  var rect=tr.getBoundingClientRect();
+  var above=(e.clientY-rect.top)<rect.height/2;
+  var moving=state.members.filter(function(x){return x.id===dragMid;})[0];
+  if(!moving){dragMid=null; return;}
+  state.members=state.members.filter(function(x){return x.id!==dragMid;});
+  var idx=state.members.findIndex(function(x){return x.id===tr.dataset.mid;});
+  state.members.splice(above?idx:idx+1,0,moving);
+  dragMid=null;
+  save(); renderAll();
+});
+grid.addEventListener('dragend',function(){
+  dragMid=null;
+  clearDropMarks();
+});
+
+// 個人ページ: 希望カレンダー（ドロップダウン入力）
+document.getElementById('wishCal').addEventListener('click',function(e){
+  var td=e.target.closest('td.wday');
+  if(!td||td.classList.contains('leave')) return;
+  var d=parseInt(td.dataset.d,10);
+  if(!d) return;
+  var m=viewMember();
+  if(!m) return;
+  if(!wishEditableFor(m)){
+    showModal('権限がありません',['このページの希望は本人・師長・管理者のみ変更できます。'],[{label:'閉じる'}]);
+    return;
+  }
+  var opts=isShort(m)
+    ?[{v:'休',label:'希望休'},{v:'時'}]
+    :[{v:'休',label:'希望休'},{v:'日'},{v:'長'},{v:'準'},{v:'深'}];
+  opts.push({v:'',label:'（なし）'});
+  showCellMenu(td,opts,function(o){
+    setWish(m.id,d,o.v);
+    save(); renderMemberPage();
+  });
+  e.stopPropagation();
+});
+// 個人ページ: 基本情報（時短・パスワード）
+document.getElementById('mvInfo').addEventListener('change',function(e){
+  if(!canEdit()){renderMemberPage(); return;}
+  var m=viewMember();
+  if(!m) return;
+  if(e.target.id==='shortOn'){m.short.on=e.target.checked;}
+  if(e.target.id==='shortFrom'){m.short.from=e.target.value;}
+  if(e.target.id==='shortTo'){m.short.to=e.target.value;}
+  save(); renderAll();
+});
+document.getElementById('mvInfo').addEventListener('click',function(e){
+  var m=viewMember();
+  if(!m) return;
+  if(e.target.id==='btnPwSelf'){
+    showPrompt('🔑 パスワードの変更',['新しいパスワードを入力してください。','空のまま OK でパスワードなしに戻せます。'],function(v){
+      m.pw=v||'';
+      save(); renderMemberPage();
+    });
+  }
+  if(e.target.id==='btnPwReset'){
+    if(!isAdmin()) return;
+    showPrompt('🔑 パスワードのリセット（管理者）',[m.name+'さんの新しいパスワードを入力してください。','空のまま OK でパスワードなしになります。'],function(v){
+      m.pw=v||'';
+      save(); renderMemberPage();
+      showModal('リセットしました',[m.name+'さんのパスワードを'+(v?'再設定しました。本人に伝えてください。':'解除しました（空欄でログインできます）。')],[{label:'閉じる'}]);
+    });
+  }
+});
+// 個人ページ: 休暇期間
+document.getElementById('btnAddLeave').addEventListener('click',function(){
+  if(!canEdit()) return;
+  var m=viewMember();
+  if(!m) return;
+  m.leaves.push({from:'',to:'',label:'産休'});
+  save(); renderMemberPage();
+});
+document.getElementById('leaveList').addEventListener('change',function(e){
+  if(!canEdit()){renderMemberPage(); return;}
+  var i=parseInt(e.target.dataset.i,10);
+  var m=viewMember();
+  if(!m||isNaN(i)||!m.leaves[i]) return;
+  if(e.target.classList.contains('lvFrom')) m.leaves[i].from=e.target.value;
+  if(e.target.classList.contains('lvTo')) m.leaves[i].to=e.target.value;
+  if(e.target.classList.contains('lvLabel')) m.leaves[i].label=e.target.value;
+  save(); renderMemberPage();
+});
+document.getElementById('leaveList').addEventListener('click',function(e){
+  if(!e.target.classList.contains('lvDel')) return;
+  if(!canEdit()) return;
+  var i=parseInt(e.target.dataset.i,10);
+  var m=viewMember();
+  if(!m||isNaN(i)) return;
+  m.leaves.splice(i,1);
+  save(); renderMemberPage();
+});
+
+// 希望勤務ファイル
+document.getElementById('btnWishExport').addEventListener('click',function(){
+  var m=viewMember();
+  if(!m) return;
+  var data={
+    type:'kinmu-wish',
+    name:m.name,
+    month:monthKey(),
+    wishes:(state.wishes[monthKey()]||{})[m.id]||{}
+  };
+  download(new Blob([JSON.stringify(data,null,1)],{type:'application/json'}),
+    '希望勤務_'+m.name+'_'+monthKey()+'.json');
+});
+document.getElementById('btnWishImport').addEventListener('click',function(){
+  if(!canEdit()) return;
+  document.getElementById('wishFile').click();
+});
+document.getElementById('wishFile').addEventListener('change',function(){
+  var file=this.files&&this.files[0];
+  this.value='';
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var d=JSON.parse(reader.result);
+      if(!d||d.type!=='kinmu-wish'||!d.name||!d.month) throw new Error('bad');
+      var matches=state.members.filter(function(x){return x.name===d.name;});
+      if(matches.length===0){
+        showModal('エラー',['メンバー「'+d.name+'」が見つかりません。','名前を一致させてください。'],[{label:'閉じる'}]);
+        return;
+      }
+      var target=matches[0];
+      var n=Object.keys(d.wishes||{}).length;
+      var lines=[target.name+'さんの '+d.month.replace('-','年')+'月分 の希望 '+n+'件を取り込みます。','同じ期間の既存の希望は置き換えられます。'];
+      if(matches.length>1) lines.push('※ 同名のメンバーが複数います。先頭の1人に取り込みます。');
+      showModal('希望ファイルの取り込み',lines,[
+        {label:'戻る'},
+        {label:'取り込む',primary:true,fn:function(){
+          if(!state.wishes[d.month]) state.wishes[d.month]={};
+          state.wishes[d.month][target.id]=d.wishes||{};
+          save(); renderAll();
+        }}
+      ]);
+    }catch(e){
+      showModal('エラー',['ファイルを読み込めませんでした。','「📤 希望を書き出す」で作成したファイルを選んでください。'],[{label:'閉じる'}]);
+    }
+  };
+  reader.readAsText(file);
+});
+
+renderAll();
+startCloud();
+})();
+</script>
+</body>
+</html>

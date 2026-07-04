@@ -228,6 +228,7 @@
     <div class="login-err" id="loginErr"></div>
     <div class="login-hint" id="loginCloud" style="font-weight:bold"></div>
     <div class="login-hint">はじめての方はパスワード欄を空のままログインすると、その場でパスワードを設定します（8文字以上・英字と数字を含む）。</div>
+    <div class="login-hint" id="verLine" style="text-align:right;color:#b0bec5"></div>
     <button id="btnCfgPaste" style="margin-top:10px;font-size:12px;padding:6px">☁ 接続コードで接続（管理者から受け取った方）</button>
   </div>
 </div>
@@ -569,6 +570,7 @@
 <script>
 (function(){
 'use strict';
+var APP_VER='2026.07.05-a';
 var STORAGE_KEY='kinmu-maker-v2';
 var WD=['日','月','火','水','木','金','土'];
 var SHIFTS={
@@ -1953,7 +1955,8 @@ function renderAll(){
   document.getElementById('btnGen').style.display=ed?'':'none';
   document.getElementById('btnClear').style.display=ed?'':'none';
   document.getElementById('btnSettings').style.display=ed?'':'none';
-  document.getElementById('settingsTitle').textContent=isAdmin()?'⚙ 管理者設定':'⚙ 設定（師長）';
+  document.getElementById('settingsTitle').textContent=(isAdmin()?'⚙ 管理者設定':'⚙ 設定（師長）')+'　ver.'+APP_VER;
+  document.getElementById('verLine').textContent='ver.'+APP_VER;
   document.getElementById('dataRow').style.display=isAdmin()?'':'none';
   document.getElementById('wishImportRow').style.display=ed?'':'none';
   document.getElementById('adminPwRow').style.display=isAdmin()?'':'none';

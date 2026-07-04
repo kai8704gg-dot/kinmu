@@ -208,6 +208,7 @@
     <div class="login-err" id="loginErr"></div>
     <div class="login-hint" id="loginCloud" style="font-weight:bold"></div>
     <div class="login-hint">はじめての方はパスワード欄を空のままログインすると、その場でパスワードを設定します（8文字以上・英字と数字を含む）。</div>
+    <button id="btnCfgPaste" style="margin-top:10px;font-size:12px;padding:6px">☁ 接続コードで接続（管理者から受け取った方）</button>
   </div>
 </div>
 <header>
@@ -643,6 +644,37 @@ var state=load()||defaultState();
 var loc=loadLoc();
 if(loc.session&&loc.session.type==='member'&&!state.members.some(function(m){return m.id===loc.session.mid;})) loc.session=null;
 
+// 接続設定のコード化（LINE等でも崩れない英数字のみのコード）
+function cfgEncode(obj){
+  var json=JSON.stringify(obj);
+  var b=btoa(unescape(encodeURIComponent(json)));
+  return b.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function cfgDecode(s){
+  s=String(s||'').trim();
+  var m=s.match(/[?#&]cfg=([^&\s]+)/); // URL全体が貼られた場合は cfg= 以降を抽出
+  if(m) s=m[1];
+  if(!s) return null;
+  try{ // 旧形式（%エンコードされたJSON）
+    if(s.indexOf('%7B')===0||s.indexOf('{')===0){
+      var c0=JSON.parse(decodeURIComponent(s));
+      if(c0&&c0.apiKey) return c0;
+    }
+  }catch(e){}
+  try{ // 新形式（Base64）
+    var b=s.replace(/-/g,'+').replace(/_/g,'/');
+    while(b.length%4) b+='=';
+    var c=JSON.parse(decodeURIComponent(escape(atob(b))));
+    if(c&&c.apiKey) return c;
+  }catch(e2){}
+  return null;
+}
+function applyCfg(c){
+  if(!(c&&c.apiKey&&c.projectId&&c.wardId)) return false;
+  loc.cloud={apiKey:String(c.apiKey),authDomain:String(c.authDomain||''),projectId:String(c.projectId),wardId:String(c.wardId)};
+  localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
+  return true;
+}
 // URLに埋め込まれた接続設定（?cfg=… または #cfg=…）を取り込む（共有リンクで開いた場合）
 (function(){
   var raw='';
@@ -650,13 +682,7 @@ if(loc.session&&loc.session.type==='member'&&!state.members.some(function(m){ret
   if(mq) raw=mq[1];
   else if(location.hash&&location.hash.indexOf('#cfg=')===0) raw=location.hash.slice(5);
   if(!raw) return;
-  try{
-    var c=JSON.parse(decodeURIComponent(raw));
-    if(c&&c.apiKey&&c.projectId&&c.wardId){
-      loc.cloud={apiKey:String(c.apiKey),authDomain:String(c.authDomain||''),projectId:String(c.projectId),wardId:String(c.wardId)};
-      localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
-    }
-  }catch(e){}
+  applyCfg(cfgDecode(raw));
   try{history.replaceState(null,'',location.pathname);}catch(e){}
 })();
 
@@ -1848,7 +1874,7 @@ function showModal(title,lines,buttons){
   document.getElementById('modalTitle').textContent=title;
   document.getElementById('modalList').innerHTML=lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('');
   var inp=document.getElementById('modalInput');
-  inp.style.display='none'; inp.value='';
+  inp.style.display='none'; inp.value=''; inp.type='password';
   var foot=document.getElementById('modalFoot');
   foot.innerHTML='';
   buttons.forEach(function(b){
@@ -2073,6 +2099,20 @@ document.getElementById('btnLogin').addEventListener('click',function(){
 document.getElementById('loginPw').addEventListener('keydown',function(e){
   if(e.key==='Enter') document.getElementById('btnLogin').click();
 });
+// 接続コードの貼り付け（共有リンクが崩れた場合の代替）
+document.getElementById('btnCfgPaste').addEventListener('click',function(){
+  showPrompt('☁ 接続コードで接続',[
+    '管理者から受け取った接続コード（またはリンク全体）を貼り付けてください。'
+  ],function(v){
+    var c=cfgDecode(v);
+    if(!c||!applyCfg(c)){
+      showModal('エラー',['コードを読み取れませんでした。','コード全体をコピーして貼り付けたか確認してください。'],[{label:'閉じる'}]);
+      return;
+    }
+    location.reload();
+  });
+  document.getElementById('modalInput').type='text';
+});
 document.getElementById('btnLogout').addEventListener('click',function(){
   loc.session=null; loc.view='main';
   save(); renderAll();
@@ -2174,24 +2214,30 @@ document.getElementById('btnCloudLink').addEventListener('click',function(){
     return;
   }
   var cfg={apiKey:loc.cloud.apiKey,authDomain:loc.cloud.authDomain,projectId:loc.cloud.projectId,wardId:loc.cloud.wardId};
-  var url=location.origin+location.pathname+'?cfg='+encodeURIComponent(JSON.stringify(cfg));
-  var lines;
+  var code=cfgEncode(cfg);
+  var url=location.origin+location.pathname+'?cfg='+code;
+  var copyText=function(t){
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t);
+  };
   if(location.protocol==='file:'){
-    lines=['このアプリはまだWebに公開されていないため、リンクを配っても他の人は開けません。',
-      '「📖使い方」→「クラウド同期」のとおりWebに公開（GitHub Pagesなど）した後、公開したURLでこの画面を開いてリンクを作ってください。'];
-    showModal('⚠ Web公開がまだです',lines,[{label:'閉じる'}]);
+    showModal('⚠ Web公開がまだです',
+      ['このアプリはまだWebに公開されていないため、リンクを配っても他の人は開けません。',
+       '「📖使い方」→「クラウド同期」のとおりWebに公開（GitHub Pagesなど）した後、公開したURLでこの画面を開いてリンクを作ってください。'],
+      [{label:'閉じる'}]);
     return;
   }
-  lines=['このリンクを職員にLINEなどで送ると、開くだけで接続設定済みの状態になります。',
-    '（リンクを知っている人はデータにアクセスできます。部外者に渡さないでください）','',url];
-  var copy=function(){
-    if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(url);
-    }
-  };
-  showModal('🔗 共有用リンク',lines,[
+  showModal('🔗 共有用リンク',[
+    '【おすすめ】「リンクをコピー」して職員にLINEなどで送ると、開くだけで接続設定済みになります。',
+    url,
+    '',
+    '【リンクが崩れる・開けないと言われたら】「接続コードをコピー」して、普通のURL（'+location.origin+location.pathname+'）と一緒に送ってください。',
+    '職員はURLを開き、ログイン画面の「☁接続コードで接続」にコードを貼り付けます。',
+    '',
+    '※ リンク・コードを知っている人はデータにアクセスできます。部外者に渡さないでください。'
+  ],[
     {label:'閉じる'},
-    {label:'コピーする',primary:true,fn:copy}
+    {label:'接続コードをコピー',fn:function(){copyText(code);}},
+    {label:'リンクをコピー',primary:true,fn:function(){copyText(url);}}
   ]);
 });
 document.getElementById('btnCloudOff').addEventListener('click',function(){

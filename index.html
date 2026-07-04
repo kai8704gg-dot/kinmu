@@ -1612,9 +1612,9 @@ function doGenerate(mode){
     if(unful.length>0||issues.length>0){
       var reasons=unful.concat(issues.map(function(i){return i.msg;})).concat(r.notes);
       showModal('① 希望を全て反映した勤務表は作成できませんでした',reasons,[
-        {label:'戻る'},
+        {label:'② 可能な限り反映して作成',primary:true,fn:function(){doGenerate(2);}},
         {label:'③ 希望なしで作成',fn:function(){doGenerate(3);}},
-        {label:'② 可能な限り反映して作成',primary:true,fn:function(){doGenerate(2);}}
+        {label:'戻る'}
       ]);
       return;
     }
@@ -2390,10 +2390,10 @@ document.getElementById('btnGen').addEventListener('click',function(){
   ];
   if(monthHasData()) lines.push('※ 現在の内容は上書きされます。');
   showModal('⚡ 自動作成 — 方式を選んでください',lines,[
-    {label:'戻る'},
-    {label:'③ 希望なし',fn:function(){doGenerate(3);}},
+    {label:'① 希望を全て反映',primary:true,fn:function(){doGenerate(1);}},
     {label:'② 可能な限り反映',fn:function(){doGenerate(2);}},
-    {label:'① 希望を全て反映',primary:true,fn:function(){doGenerate(1);}}
+    {label:'③ 希望なし',fn:function(){doGenerate(3);}},
+    {label:'戻る'}
   ]);
 });
 document.getElementById('btnClear').addEventListener('click',function(){

@@ -151,9 +151,13 @@
   .login-hint{font-size:11px; color:#78909c; margin-top:8px; line-height:1.7;}
   /* モーダル */
   #overlay{
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200;
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:400;
     align-items:center; justify-content:center;
   }
+  .rrow{display:flex; align-items:center; gap:4px;}
+  .rrow .crdel{border:none; background:none; color:#c62828; cursor:pointer; padding:0 4px; font-size:13px;}
+  #ruleForm{display:none; margin-top:8px; padding:10px; border:1px solid #cfd8dc; border-radius:8px; background:#fafafa;}
+  #ruleForm select,#ruleForm input[type=number]{font-size:13px; padding:3px 5px; border:1px solid #cfd8dc; border-radius:4px; font-family:inherit;}
   #overlay.show{display:flex;}
   .modal{background:#fff; border-radius:10px; max-width:620px; width:92%; max-height:82vh; display:flex; flex-direction:column; box-shadow:0 8px 30px rgba(0,0,0,.3);}
   .modal h2{margin:0; padding:14px 18px; font-size:16px; border-bottom:1px solid #eee;}
@@ -203,7 +207,7 @@
     <button class="primary" id="btnLogin">ログイン</button>
     <div class="login-err" id="loginErr"></div>
     <div class="login-hint" id="loginCloud" style="font-weight:bold"></div>
-    <div class="login-hint">初期状態ではパスワードは未設定です。ログイン後、マイページで自分のパスワードを設定できます。</div>
+    <div class="login-hint">はじめての方はパスワード欄を空のままログインすると、その場でパスワードを設定します（8文字以上・英字と数字を含む）。</div>
   </div>
 </div>
 <header>
@@ -243,6 +247,17 @@
       <label>期間の開始日 <input type="number" id="setStart" min="1" max="28"></label>
     </div>
     <div class="rules" id="rulesEl"></div>
+    <div id="ruleForm">
+      <div class="settings-row" style="margin-top:0">
+        <label>条件の種類 <select id="rfType"></select></label>
+      </div>
+      <div class="settings-row" id="rfParams"></div>
+      <div class="settings-row">
+        <button id="rfAdd" class="primary">この条件を追加</button>
+        <button id="rfCancel">キャンセル</button>
+        <span style="font-size:11px;color:#78909c">※ 追加した条件は警告チェックに使われます（自動作成は標準条件で組み立てます）</span>
+      </div>
+    </div>
     <div class="settings-row">
       <span style="font-size:13px">役職の色:</span>
       <label>師長 <input type="color" id="col_chief"></label>
@@ -255,6 +270,8 @@
     <div class="settings-row" id="adminPwRow">
       <button id="btnAdminPw">🔑 管理者パスワードの変更</button>
       <span id="adminPwInfo" style="font-size:12px;color:#546e7a"></span>
+      <button id="btnTotp"></button>
+      <span id="totpInfo" style="font-size:12px;color:#546e7a"></span>
     </div>
     <div id="cloudRow" style="display:none;margin-top:10px;padding:10px;border:1px solid #90caf9;border-radius:8px;background:#f5faff">
       <b style="font-size:13px">☁ クラウド同期（全端末でデータを共有）</b>
@@ -334,14 +351,15 @@
     <h3>ログインと権限</h3>
     <table>
       <tr><th>ユーザー</th><th>できること</th></tr>
-      <tr><td>管理者</td><td>すべての操作（メンバー・勤務表・設定・全員のパスワードリセット）</td></tr>
-      <tr><td>師長・副師長</td><td>勤務表の編集・自動作成・メンバー管理・設定</td></tr>
-      <tr><td>一般職員</td><td>勤務表の閲覧・CSV/印刷・マイページで自分の希望入力</td></tr>
+      <tr><td>管理者</td><td>すべての操作（メンバー・勤務表・設定・全員のパスワードリセット・2段階認証）</td></tr>
+      <tr><td>師長</td><td>勤務表の編集・自動作成・メンバー管理・設定</td></tr>
+      <tr><td>副師長・一般職員</td><td>勤務表の閲覧・CSV/印刷・マイページで自分の希望入力</td></tr>
     </table>
     <ul>
-      <li>初期状態では全員パスワード未設定です（空欄のままログインできます）。</li>
-      <li>各自マイページの「🔑パスワードを変更」で設定してください。忘れた場合は管理者がリセットできます。</li>
-      <li>管理者パスワードは⚙設定から変更します。最初に必ず設定してください。</li>
+      <li><b>初回ログイン時にパスワードの設定が必須</b>です（パスワード欄を空のままログインすると設定画面が出ます）。</li>
+      <li>パスワードは8文字以上で英字と数字を含むもの。推測されやすいもの・名前入りは使えません。</li>
+      <li>忘れた場合は、管理者が個人ページの「🔑パスワードをリセット」で未設定に戻せます（本人が次回に再設定）。</li>
+      <li><b>2段階認証（管理者・推奨）</b> — ⚙設定の「🛡2段階認証を有効にする」で、スマホの認証アプリ（Google認証システムなど）の6桁コードをログインに追加できます。</li>
     </ul>
   </div>
   <div class="panel">
@@ -404,6 +422,16 @@
   <div class="panel">
     <h3>条件（チェックする規則）</h3>
     <p>⚙設定の「条件チェック」で、各規則のオン・オフと数値を変更できます。オフにした規則は警告の対象外になります。</p>
+    <p><b>条件の追加</b> — 「＋条件を追加」から新しい条件を作れます（✚マーク付きで一覧に並び、オン・オフや削除ができます）。作れる条件の種類:</p>
+    <ul>
+      <li>連続勤務の上限（例: 連続勤務は5日まで）</li>
+      <li>ある勤務の1日あたりの人数（ちょうど／以上／以下）</li>
+      <li>ある勤務の1人あたり月間回数（ちょうど／以上／以下）</li>
+      <li>ある勤務の翌日を制限（例: 深夜の翌日は公休のみ）</li>
+      <li>ある役職を特定の勤務に入れない（例: 新人は深夜に入れない）</li>
+      <li>ある勤務に特定の役職を〇名以上（例: 日勤にリーダー2名以上）</li>
+    </ul>
+    <p>※ 追加した条件は警告チェックに反映されます。自動作成は標準条件で組み立てるため、追加条件の違反が出た場合はセルをクリックして手直ししてください。</p>
     <ul>
       <li>準夜・深夜は設定人数ぴったり（新人が入る日は＋1名の5名体制）</li>
       <li>ゼット勤務（準夜→翌日深夜が同一メンバー）</li>
@@ -503,6 +531,28 @@ var RULE_DEFS=[
   ['parity','長日勤と夜勤の回数一致'],
   ['short','時短者に夜勤・長日勤なし']
 ];
+var CMP_NAME={eq:'ちょうど',ge:'以上',le:'以下'};
+var RULE_TYPES=[
+  ['maxConsec','連続勤務の上限（〇日まで）'],
+  ['dailyCount','ある勤務の1日あたりの人数'],
+  ['monthlyCount','ある勤務の1人あたり月間回数'],
+  ['nextDay','ある勤務の翌日を制限'],
+  ['roleForbid','ある役職を特定の勤務に入れない'],
+  ['roleRequire','ある勤務に特定の役職を〇名以上']
+];
+function customLabel(r){
+  var S=function(c){return SHIFTS[c]?SHIFTS[c].name:c;};
+  var p=r.p||{};
+  switch(r.type){
+    case 'maxConsec': return '連続勤務は'+p.n+'日まで';
+    case 'dailyCount': return S(p.shift)+'は1日'+p.n+'名'+(CMP_NAME[p.cmp]||'');
+    case 'monthlyCount': return S(p.shift)+'は1人あたり月'+p.n+'回'+(CMP_NAME[p.cmp]||'');
+    case 'nextDay': return S(p.shift)+'の翌日は'+S(p.n1)+(p.n2?'・'+S(p.n2):'')+'・公休のみ';
+    case 'roleForbid': return ROLE_NAME[p.role]+'は'+S(p.shift)+'に入れない';
+    case 'roleRequire': return S(p.shift)+'に'+ROLE_NAME[p.role]+'を'+p.n+'名以上';
+  }
+  return '追加条件';
+}
 function leaderQ(m){return m.role==='chief'||m.role==='deputy'||m.role==='leader';}
 function isShort(m){return !!(m.short&&m.short.on);}
 function defaultRoleColors(){return {chief:'#ffe082',deputy:'#fff3c4',leader:'#b2dfdb',staff:'#ffffff',rookie:'#f8bbd0'};}
@@ -525,8 +575,8 @@ function defaultState(){
   return {
     members:sampleMembers(), nextId:31,
     schedules:{}, wishes:{},
-    settings:{offDays:8,nightSize:4,nightCap:5,startDay:1,roleColors:defaultRoleColors(),rules:defaultRules()},
-    adminPass:''
+    settings:{offDays:8,nightSize:4,nightCap:5,startDay:1,roleColors:defaultRoleColors(),rules:defaultRules(),customRules:[]},
+    adminPass:'', adminTotp:null
   };
 }
 // この端末だけの設定（ログイン状態・表示中の月・クラウド接続情報）
@@ -554,6 +604,8 @@ function normalize(st){
   RULE_DEFS.forEach(function(r){if(st.settings.rules[r[0]]===undefined) st.settings.rules[r[0]]=true;});
   if(st.adminPass===undefined) st.adminPass=st.editPass||'';
   delete st.editPass;
+  if(!st.settings.customRules) st.settings.customRules=[];
+  if(st.adminTotp===undefined) st.adminTotp=null;
   return st;
 }
 function load(){
@@ -714,9 +766,10 @@ function attachCloud(){
     if(c.nextId) state.nextId=c.nextId;
     if(c.settings) state.settings=c.settings;
     if(c.adminPass!==undefined) state.adminPass=c.adminPass;
+    if(c.adminTotp!==undefined) state.adminTotp=c.adminTotp;
     normalize(state);
     if(loc.session&&loc.session.type==='member'&&!state.members.some(function(m){return m.id===loc.session.mid;})) loc.session=null;
-    pushed.core=JSON.stringify({members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass});
+    pushed.core=JSON.stringify({members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass,adminTotp:state.adminTotp});
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
     localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
     setCloudStatus('ok');
@@ -752,7 +805,7 @@ function cloudPush(){
   var onErr=function(e){setCloudStatus('error','保存を送信できません: '+((e&&e.message)||e));};
   try{
     var b=cloudBase();
-    var core={members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass};
+    var core={members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass,adminTotp:state.adminTotp};
     var cs=JSON.stringify(core);
     if(cs!==pushed.core){
       pushed.core=cs;
@@ -795,15 +848,69 @@ function curMember(){
 function isEditor(){
   if(isAdmin()) return true;
   var m=curMember();
-  return !!(m&&(m.role==='chief'||m.role==='deputy'));
+  return !!(m&&m.role==='chief'); // 副師長は閲覧のみ（一般職員と同権限）
 }
 function editable(){return isEditor();}
 function canEdit(){
   if(editable()) return true;
   showModal('権限がありません',
-    ['この操作は師長・副師長または管理者のみ行えます。','自分の希望勤務はマイページから入力できます。'],
+    ['この操作は師長または管理者のみ行えます。','自分の希望勤務はマイページから入力できます。'],
     [{label:'閉じる'}]);
   return false;
+}
+// パスワードの強度チェック（簡単なパスワードを避ける）
+function pwCheck(v,name){
+  if(!v||v.length<8) return '8文字以上にしてください';
+  if(!(/[A-Za-z]/.test(v)&&/[0-9]/.test(v))) return '英字と数字を両方含めてください';
+  var low=v.toLowerCase();
+  var bad=['password','pasuwado','12345678','123456789','1234567890','qwerty','abcdefgh','asdfghjk','11111111'];
+  for(var i=0;i<bad.length;i++) if(low.indexOf(bad[i])>=0) return '推測されやすい文字列（'+bad[i]+'）は使えません';
+  if(/^(.)\1+$/.test(v)) return '同じ文字の繰り返しは使えません';
+  if(name&&String(name).length>=2&&low.indexOf(String(name).toLowerCase())>=0) return '名前を含むパスワードは避けてください';
+  return null;
+}
+/* ---------- 2段階認証（TOTP: Google認証システム等に対応） ---------- */
+var B32CH='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32enc(bytes){
+  var bits='',out='';
+  for(var i=0;i<bytes.length;i++) bits+=('00000000'+bytes[i].toString(2)).slice(-8);
+  for(i=0;i+5<=bits.length;i+=5) out+=B32CH[parseInt(bits.substr(i,5),2)];
+  return out;
+}
+function b32dec(s){
+  s=String(s).replace(/[^A-Za-z2-7]/g,'').toUpperCase();
+  var bits='';
+  for(var i=0;i<s.length;i++) bits+=('00000'+B32CH.indexOf(s[i]).toString(2)).slice(-5);
+  var out=[];
+  for(i=0;i+8<=bits.length;i+=8) out.push(parseInt(bits.substr(i,8),2));
+  return new Uint8Array(out);
+}
+function genTotpSecret(){
+  var b=new Uint8Array(20);
+  if(window.crypto&&crypto.getRandomValues) crypto.getRandomValues(b);
+  else for(var i=0;i<20;i++) b[i]=Math.floor(Math.random()*256);
+  return b32enc(b);
+}
+function totpAt(secret,slot){
+  var key=b32dec(secret);
+  var msg=new Uint8Array(8);
+  var s=slot;
+  for(var i=7;i>=0;i--){msg[i]=s&0xff; s=Math.floor(s/256);}
+  return crypto.subtle.importKey('raw',key,{name:'HMAC',hash:'SHA-1'},false,['sign'])
+    .then(function(k){return crypto.subtle.sign('HMAC',k,msg);})
+    .then(function(sig){
+      var h=new Uint8Array(sig);
+      var o=h[h.length-1]&15;
+      var code=(((h[o]&127)<<24)|(h[o+1]<<16)|(h[o+2]<<8)|h[o+3])%1000000;
+      return ('00000'+code).slice(-6);
+    });
+}
+function verifyTotp(secret,code,cb){
+  if(!(window.crypto&&crypto.subtle)){cb(false,'この環境では2段階認証を確認できません'); return;}
+  var slot=Math.floor(Date.now()/30000);
+  Promise.all([totpAt(secret,slot-1),totpAt(secret,slot),totpAt(secret,slot+1)])
+    .then(function(codes){cb(codes.indexOf(String(code).trim())>=0);})
+    .catch(function(){cb(false);});
 }
 function wishEditableFor(m){
   if(isEditor()) return true;
@@ -998,6 +1105,66 @@ function collectIssues(read){
         var nx=read(m.id,d+1);
         if(nx!=='準'&&nx!=='休'&&!(nx===''&&lvm[m.id][d+1]))
           add(m.name+'さん '+fmtD(d+1)+': 長日勤の翌日は準夜か公休にしてください',[[m.id,d],[m.id,d+1]]);
+      }
+    }
+  });
+  // 追加された条件（条件追加GUIで作成）
+  (state.settings.customRules||[]).forEach(function(r){
+    if(!r.on) return;
+    var p=r.p||{}, lbl=customLabel(r), d;
+    if(r.type==='maxConsec'){
+      state.members.forEach(function(m){
+        var run=0;
+        for(var d=1;d<=days;d++){
+          var v=read(m.id,d);
+          if(v&&v!=='休'){
+            run++;
+            if(run===(+p.n)+1) add(m.name+'さん '+fmtD(d)+': 連続勤務が'+p.n+'日を超えています（'+lbl+'）',[[m.id,d]]);
+          }else run=0;
+        }
+      });
+    }
+    if(r.type==='dailyCount'){
+      for(d=1;d<=days;d++){
+        var c=0;
+        state.members.forEach(function(m){if(read(m.id,d)===p.shift)c++;});
+        var ok=p.cmp==='eq'?c===+p.n:p.cmp==='ge'?c>=+p.n:c<=+p.n;
+        if(!ok) add(fmtD(d)+': '+SHIFTS[p.shift].name+'が'+c+'名です（'+lbl+'）',[]);
+      }
+    }
+    if(r.type==='monthlyCount'){
+      state.members.forEach(function(m){
+        var c=0;
+        for(var d=1;d<=days;d++) if(read(m.id,d)===p.shift)c++;
+        var ok=p.cmp==='eq'?c===+p.n:p.cmp==='ge'?c>=+p.n:c<=+p.n;
+        if(!ok) add(m.name+'さん: '+SHIFTS[p.shift].name+'が'+c+'回です（'+lbl+'）',[]);
+      });
+    }
+    if(r.type==='nextDay'){
+      state.members.forEach(function(m){
+        for(var d=1;d<days;d++){
+          if(read(m.id,d)!==p.shift) continue;
+          var nx=read(m.id,d+1);
+          var okv=['休']; if(p.n1)okv.push(p.n1); if(p.n2)okv.push(p.n2);
+          if(okv.indexOf(nx)<0&&!(nx===''&&lvm[m.id][d+1]))
+            add(m.name+'さん '+fmtD(d+1)+': 「'+lbl+'」に違反しています',[[m.id,d],[m.id,d+1]]);
+        }
+      });
+    }
+    if(r.type==='roleForbid'){
+      state.members.forEach(function(m){
+        if(m.role!==p.role) return;
+        for(var d=1;d<=days;d++)
+          if(read(m.id,d)===p.shift)
+            add(m.name+'さん '+fmtD(d)+': 「'+lbl+'」に違反しています',[[m.id,d]]);
+      });
+    }
+    if(r.type==='roleRequire'){
+      for(d=1;d<=days;d++){
+        var g=state.members.filter(function(m){return read(m.id,d)===p.shift;});
+        if(g.length===0) continue;
+        var rc=g.filter(function(m){return m.role===p.role;}).length;
+        if(rc<+p.n) add(fmtD(d)+': 「'+lbl+'」に違反しています（現在'+rc+'名）',g.map(function(m){return [m.id,d];}));
       }
     }
   });
@@ -1375,6 +1542,7 @@ function doGenerate(mode){
 /* ---------- 描画 ---------- */
 var grid=document.getElementById('grid');
 var membersEl=document.getElementById('membersEl');
+var selSet={}; // 一括削除の選択状態（画面内のみ）
 
 function recommendedInfo(){
   var days=pdays(), s=state.settings;
@@ -1392,6 +1560,7 @@ function renderMembers(){
   if(editable()){
     html=state.members.map(function(m,i){
       return '<div class="chip">'
+        +'<input type="checkbox" class="msel" data-mid="'+m.id+'"'+(selSet[m.id]?' checked':'')+' title="一括削除の選択">'
         +'<button class="icon mup" data-mid="'+m.id+'" title="左へ"'+(i===0?' disabled':'')+'>◀</button>'
         +'<button class="icon mdown" data-mid="'+m.id+'" title="右へ"'+(i===state.members.length-1?' disabled':'')+'>▶</button>'
         +'<input class="mname" data-mid="'+m.id+'" value="'+esc(m.name)+'" style="background:'+esc(rc[m.role]||'#fff')+'">'
@@ -1407,6 +1576,8 @@ function renderMembers(){
         +'</div>';
     }).join('');
     html+='<button id="btnAdd">＋ メンバー追加</button>';
+    var selN=state.members.filter(function(m){return selSet[m.id];}).length;
+    if(selN>0) html+='<button id="btnBulkDel" class="danger">☑ 選択した'+selN+'名を一括削除</button>';
   }else{
     html=state.members.map(function(m){
       return '<div class="chip">'
@@ -1610,9 +1781,16 @@ function renderAll(){
   var ed=editable();
   document.getElementById('rulesEl').innerHTML='<span style="font-size:13px;width:100%">条件チェック（外すと警告の対象外）:</span>'
     +RULE_DEFS.map(function(r){
-      return '<label><input type="checkbox" class="rulechk" data-r="'+r[0]+'"'
-        +(state.settings.rules[r[0]]?' checked':'')+(ed?'':' disabled')+'> '+r[1]+'</label>';
-    }).join('');
+      return '<span class="rrow"><label><input type="checkbox" class="rulechk" data-r="'+r[0]+'"'
+        +(state.settings.rules[r[0]]?' checked':'')+(ed?'':' disabled')+'> '+r[1]+'</label></span>';
+    }).join('')
+    +(state.settings.customRules||[]).map(function(r){
+      return '<span class="rrow"><label><input type="checkbox" class="rulechk" data-cr="'+r.id+'"'
+        +(r.on?' checked':'')+(ed?'':' disabled')+'> ✚'+esc(customLabel(r))+'</label>'
+        +(ed?'<button class="crdel" data-cr="'+r.id+'" title="この条件を削除">✕</button>':'')
+        +'</span>';
+    }).join('')
+    +(ed?'<button id="btnAddRule">＋ 条件を追加</button>':'');
   // ユーザー表示
   var chip=document.getElementById('userChip');
   var my=document.getElementById('btnMyPage');
@@ -1632,6 +1810,9 @@ function renderAll(){
   document.getElementById('wishImportRow').style.display=ed?'':'none';
   document.getElementById('adminPwRow').style.display=isAdmin()?'':'none';
   document.getElementById('adminPwInfo').textContent=state.adminPass?'設定済み':'未設定（必ず設定してください）';
+  var totpOn=!!(state.adminTotp&&state.adminTotp.on);
+  document.getElementById('btnTotp').textContent=totpOn?'🛡 2段階認証を無効にする':'🛡 2段階認証を有効にする';
+  document.getElementById('totpInfo').textContent=totpOn?'有効（ログインに認証アプリの6桁コードが必要）':'無効（有効化を推奨）';
   document.getElementById('cloudRow').style.display=isAdmin()?'':'none';
   if(isAdmin()){
     var cc=loc.cloud||{};
@@ -1806,31 +1987,88 @@ function importData(file){
 
 /* ---------- イベント ---------- */
 // ログイン
+// 初回ログイン時のパスワード強制設定（設定するまでログイン完了しない）
+function forcePwSetup(name,apply){
+  var attempt=function(errMsg){
+    var lines=[];
+    if(errMsg) lines.push('⚠ '+errMsg);
+    lines.push('はじめてのログインのため、パスワードの設定が必要です。',
+      '8文字以上で、英字と数字を両方含めてください。',
+      '設定したパスワードは忘れないようにしてください（忘れた場合は管理者がリセットできます）。');
+    showModal('🔑 パスワードを設定してください — '+name,lines,[
+      {label:'設定してログイン',primary:true,fn:function(){
+        var val=document.getElementById('modalInput').value;
+        var err=pwCheck(val,name);
+        if(err){attempt(err); return;}
+        apply(val);
+      }}
+    ]);
+    var inp=document.getElementById('modalInput');
+    inp.style.display='block';
+    setTimeout(function(){inp.focus();},60);
+  };
+  attempt();
+}
+function promptTotpLogin(){
+  var attempt=function(errMsg){
+    var lines=[];
+    if(errMsg) lines.push('⚠ '+errMsg);
+    lines.push('認証アプリ（Google認証システムなど）に表示されている6桁のコードを入力してください。');
+    showModal('🛡 2段階認証',lines,[
+      {label:'キャンセル'},
+      {label:'確認',primary:true,fn:function(){
+        var code=document.getElementById('modalInput').value;
+        verifyTotp(state.adminTotp.secret,code,function(ok,msg){
+          if(ok){
+            loc.session={type:'admin'};
+            save(); renderAll();
+          }else{
+            attempt(msg||'コードが違います。時刻がずれているとエラーになります。');
+          }
+        });
+      }}
+    ]);
+    var inp=document.getElementById('modalInput');
+    inp.style.display='block';
+    setTimeout(function(){inp.focus();},60);
+  };
+  attempt();
+}
 document.getElementById('btnLogin').addEventListener('click',function(){
   var v=document.getElementById('loginUser').value;
   var pw=document.getElementById('loginPw').value;
-  var ok=false, firstAdmin=false;
+  var errEl=document.getElementById('loginErr');
   if(v==='__admin'){
-    ok=pw===(state.adminPass||'');
-    firstAdmin=ok&&!state.adminPass;
-    if(ok) loc.session={type:'admin'};
-  }else{
-    var m=state.members.filter(function(x){return x.id===v;})[0];
-    if(m){
-      ok=pw===(m.pw||'');
-      if(ok) loc.session={type:'member',mid:m.id};
+    if(!state.adminPass){
+      if(pw!==''){errEl.textContent='初回はパスワード欄を空のままログインし、その場で設定します。'; return;}
+      forcePwSetup('管理者',function(val){
+        state.adminPass=val;
+        loc.session={type:'admin'};
+        save(); renderAll();
+        showModal('設定しました',['管理者パスワードを設定しました。','⚙設定から2段階認証も設定することをおすすめします。'],[{label:'閉じる'}]);
+      });
+      return;
     }
-  }
-  if(!ok){
-    document.getElementById('loginErr').textContent='パスワードが違います。';
+    if(pw!==state.adminPass){errEl.textContent='パスワードが違います。'; return;}
+    if(state.adminTotp&&state.adminTotp.on){promptTotpLogin(); return;}
+    loc.session={type:'admin'};
+    save(); renderAll();
     return;
   }
-  save(); renderAll();
-  if(firstAdmin){
-    showModal('管理者パスワードが未設定です',
-      ['誰でも管理者としてログインできる状態です。','⚙設定の「🔑 管理者パスワードの変更」から必ず設定してください。'],
-      [{label:'あとで'},{label:'いま設定する',primary:true,fn:changeAdminPw}]);
+  var m=state.members.filter(function(x){return x.id===v;})[0];
+  if(!m){errEl.textContent='ユーザーを選んでください。'; return;}
+  if(!m.pw){
+    if(pw!==''){errEl.textContent='初回はパスワード欄を空のままログインし、その場で設定します。'; return;}
+    forcePwSetup(m.name+'さん',function(val){
+      m.pw=val;
+      loc.session={type:'member',mid:m.id};
+      save(); renderAll();
+    });
+    return;
   }
+  if(pw!==m.pw){errEl.textContent='パスワードが違います。'; return;}
+  loc.session={type:'member',mid:m.id};
+  save(); renderAll();
 });
 document.getElementById('loginPw').addEventListener('keydown',function(e){
   if(e.key==='Enter') document.getElementById('btnLogin').click();
@@ -1845,16 +2083,70 @@ document.getElementById('btnMyPage').addEventListener('click',function(){
   loc.view=m.id; save(); renderAll();
 });
 function changeAdminPw(){
-  showPrompt('🔑 管理者パスワードの変更',['新しい管理者パスワードを入力してください。'],function(v){
-    if(!v){showModal('エラー',['パスワードが空です。変更を中止しました。'],[{label:'閉じる'}]); return;}
+  showPrompt('🔑 管理者パスワードの変更',['新しい管理者パスワードを入力してください（8文字以上、英字と数字を含む）。'],function(v){
+    var err=pwCheck(v,'管理者');
+    if(err){showModal('エラー',[err+'。変更を中止しました。'],[{label:'閉じる'}]); return;}
     state.adminPass=v;
     save(); renderAll();
     showModal('設定しました',['管理者パスワードを設定しました。忘れないようにメモしてください。'],[{label:'閉じる'}]);
   });
 }
+// 2段階認証（管理者）
+function enableTotp(){
+  if(!(window.crypto&&crypto.subtle)){
+    showModal('エラー',['この環境では2段階認証を設定できません（https でアプリを開いてください）。'],[{label:'閉じる'}]);
+    return;
+  }
+  var secret=genTotpSecret();
+  var pretty=secret.replace(/(.{4})/g,'$1 ').trim();
+  var attempt=function(errMsg){
+    var lines=[];
+    if(errMsg) lines.push('⚠ '+errMsg);
+    lines.push(
+      '① スマホに認証アプリ（Google認証システム／Microsoft Authenticator など）を入れます。',
+      '② アプリの「＋」→「セットアップキーを入力」を選び、次のとおり登録します。',
+      '　アカウント名: 勤務表管理者',
+      '　キー: '+pretty,
+      '　種類: 時間ベース（TOTP）',
+      '③ アプリに表示された6桁コードを下に入力して「確認」を押してください。',
+      '※ キーは紙にも控えてください。スマホを失くすと解除できなくなります。'
+    );
+    showModal('🛡 2段階認証の設定',lines,[
+      {label:'キャンセル'},
+      {label:'確認',primary:true,fn:function(){
+        var code=document.getElementById('modalInput').value;
+        verifyTotp(secret,code,function(ok){
+          if(ok){
+            state.adminTotp={on:true,secret:secret};
+            save(); renderAll();
+            showModal('有効にしました',['次回から管理者ログイン時に、パスワードに加えて認証アプリの6桁コードが必要になります。'],[{label:'閉じる'}]);
+          }else{
+            attempt('コードが一致しません。アプリの登録内容と時刻を確認してください。');
+          }
+        });
+      }}
+    ]);
+    var inp=document.getElementById('modalInput');
+    inp.style.display='block';
+    setTimeout(function(){inp.focus();},60);
+  };
+  attempt();
+}
 document.getElementById('btnAdminPw').addEventListener('click',function(){
   if(!isAdmin()) return;
   changeAdminPw();
+});
+document.getElementById('btnTotp').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  if(state.adminTotp&&state.adminTotp.on){
+    showModal('🛡 2段階認証の無効化',['2段階認証を無効にすると、パスワードだけでログインできるようになります。'],
+      [{label:'戻る'},{label:'無効にする',primary:true,fn:function(){
+        state.adminTotp=null;
+        save(); renderAll();
+      }}]);
+  }else{
+    enableTotp();
+  }
 });
 // クラウド同期の設定
 document.getElementById('btnCloudSave').addEventListener('click',function(){
@@ -1982,7 +2274,77 @@ document.getElementById('importFile').addEventListener('change',function(){
 document.getElementById('rulesEl').addEventListener('change',function(e){
   if(!e.target.classList.contains('rulechk')) return;
   if(!canEdit()){renderAll(); return;}
-  state.settings.rules[e.target.dataset.r]=e.target.checked;
+  if(e.target.dataset.cr){
+    var cr=(state.settings.customRules||[]).filter(function(x){return x.id===e.target.dataset.cr;})[0];
+    if(cr) cr.on=e.target.checked;
+  }else{
+    state.settings.rules[e.target.dataset.r]=e.target.checked;
+  }
+  save(); renderAll();
+});
+document.getElementById('rulesEl').addEventListener('click',function(e){
+  if(e.target.id==='btnAddRule'){
+    if(!canEdit()) return;
+    var f=document.getElementById('ruleForm');
+    f.style.display='block';
+    renderRuleForm();
+    return;
+  }
+  if(e.target.classList.contains('crdel')){
+    if(!canEdit()) return;
+    var id=e.target.dataset.cr;
+    var cr=(state.settings.customRules||[]).filter(function(x){return x.id===id;})[0];
+    if(!cr) return;
+    showModal('確認',['条件「'+customLabel(cr)+'」を削除します。'],
+      [{label:'戻る'},{label:'削除する',primary:true,fn:function(){
+        state.settings.customRules=state.settings.customRules.filter(function(x){return x.id!==id;});
+        save(); renderAll();
+      }}]);
+  }
+});
+// 条件追加フォーム
+function shiftSel(id,inclOff){
+  var codes=inclOff?CODES:CODES.filter(function(c){return c!=='休';});
+  return '<select id="'+id+'">'+codes.map(function(c){return '<option value="'+c+'">'+SHIFTS[c].name+'</option>';}).join('')+'</select>';
+}
+function roleSel(id){
+  return '<select id="'+id+'">'+ROLE_KEYS.map(function(r){return '<option value="'+r+'">'+ROLE_NAME[r]+'</option>';}).join('')+'</select>';
+}
+function cmpSel(id){
+  return '<select id="'+id+'"><option value="eq">ちょうど</option><option value="ge">以上</option><option value="le">以下</option></select>';
+}
+function renderRuleForm(){
+  var t=document.getElementById('rfType');
+  if(!t.options.length){
+    t.innerHTML=RULE_TYPES.map(function(x){return '<option value="'+x[0]+'">'+x[1]+'</option>';}).join('');
+  }
+  var type=t.value||'maxConsec';
+  var h='';
+  if(type==='maxConsec') h='<label>連続 <input type="number" id="rfN" value="5" min="1" max="30"> 日まで</label>';
+  if(type==='dailyCount') h='<label>勤務 '+shiftSel('rfShift',true)+'</label><label>1日 <input type="number" id="rfN" value="4" min="0" max="50"> 名 '+cmpSel('rfCmp')+'</label>';
+  if(type==='monthlyCount') h='<label>勤務 '+shiftSel('rfShift',true)+'</label><label>1人あたり月 <input type="number" id="rfN" value="5" min="0" max="31"> 回 '+cmpSel('rfCmp')+'</label>';
+  if(type==='nextDay') h='<label>勤務 '+shiftSel('rfShift',false)+'</label><label>の翌日に許す勤務① '+shiftSel('rfN1',false)+'</label><label>② <select id="rfN2"><option value="">（なし）</option>'+CODES.filter(function(c){return c!=='休';}).map(function(c){return '<option value="'+c+'">'+SHIFTS[c].name+'</option>';}).join('')+'</select></label><span style="font-size:11px;color:#78909c">※公休は常に許可されます</span>';
+  if(type==='roleForbid') h='<label>役職 '+roleSel('rfRole')+'</label><label>を '+shiftSel('rfShift',false)+' に入れない</label>';
+  if(type==='roleRequire') h='<label>勤務 '+shiftSel('rfShift',false)+'</label><label>に '+roleSel('rfRole')+' を <input type="number" id="rfN" value="1" min="1" max="10"> 名以上</label>';
+  document.getElementById('rfParams').innerHTML=h;
+}
+document.getElementById('rfType').addEventListener('change',renderRuleForm);
+document.getElementById('rfCancel').addEventListener('click',function(){
+  document.getElementById('ruleForm').style.display='none';
+});
+document.getElementById('rfAdd').addEventListener('click',function(){
+  if(!canEdit()) return;
+  var type=document.getElementById('rfType').value;
+  var gv=function(id){var el=document.getElementById(id); return el?el.value:undefined;};
+  var p={};
+  if(type==='maxConsec') p={n:+gv('rfN')||1};
+  if(type==='dailyCount'||type==='monthlyCount') p={shift:gv('rfShift'),cmp:gv('rfCmp'),n:+gv('rfN')||0};
+  if(type==='nextDay') p={shift:gv('rfShift'),n1:gv('rfN1'),n2:gv('rfN2')||''};
+  if(type==='roleForbid') p={role:gv('rfRole'),shift:gv('rfShift')};
+  if(type==='roleRequire') p={shift:gv('rfShift'),role:gv('rfRole'),n:+gv('rfN')||1};
+  if(!state.settings.customRules) state.settings.customRules=[];
+  state.settings.customRules.push({id:'cr'+Date.now(),on:true,type:type,p:p});
+  document.getElementById('ruleForm').style.display='none';
   save(); renderAll();
 });
 ROLE_KEYS.forEach(function(r){
@@ -2000,6 +2362,11 @@ document.getElementById('btnColReset').addEventListener('click',function(){
 
 // メンバー編集
 membersEl.addEventListener('change',function(e){
+  if(e.target.classList.contains('msel')){
+    selSet[e.target.dataset.mid]=e.target.checked;
+    renderMembers();
+    return;
+  }
   if(!canEdit()){renderAll(); return;}
   var mid=e.target.dataset.mid;
   if(!mid) return;
@@ -2011,6 +2378,25 @@ membersEl.addEventListener('change',function(e){
 });
 membersEl.addEventListener('click',function(e){
   var t=e.target;
+  if(t.id==='btnBulkDel'){
+    if(!canEdit()) return;
+    var targets=state.members.filter(function(m){return selSet[m.id];});
+    if(targets.length===0) return;
+    showModal('一括削除の確認',
+      ['次の'+targets.length+'名を削除します: '+targets.map(function(m){return m.name;}).join('、'),
+       '全期間の勤務データ・希望・休暇も消えます。'],
+      [{label:'戻る'},{label:'削除する',primary:true,fn:function(){
+        var idset={};
+        targets.forEach(function(m){idset[m.id]=1;});
+        state.members=state.members.filter(function(m){return !idset[m.id];});
+        Object.keys(state.schedules).forEach(function(k){Object.keys(idset).forEach(function(i){delete state.schedules[k][i];});});
+        Object.keys(state.wishes).forEach(function(k){Object.keys(idset).forEach(function(i){delete state.wishes[k][i];});});
+        if(loc.session&&loc.session.type==='member'&&idset[loc.session.mid]) loc.session=null;
+        selSet={};
+        save(); renderAll();
+      }}]);
+    return;
+  }
   if(t.id==='btnAdd'){
     if(!canEdit()) return;
     state.members.push({id:'m'+(state.nextId++),name:'新規'+state.members.length,role:'staff',leaves:[],short:{on:false,from:'09:00',to:'16:00'},pw:''});
@@ -2148,17 +2534,24 @@ document.getElementById('mvInfo').addEventListener('click',function(e){
   var m=viewMember();
   if(!m) return;
   if(e.target.id==='btnPwSelf'){
-    showPrompt('🔑 パスワードの変更',['新しいパスワードを入力してください。','空のまま OK でパスワードなしに戻せます。'],function(v){
-      m.pw=v||'';
+    showPrompt('🔑 パスワードの変更',['新しいパスワードを入力してください（8文字以上、英字と数字を含む）。'],function(v){
+      var err=pwCheck(v,m.name);
+      if(err){showModal('エラー',[err+'。変更を中止しました。'],[{label:'閉じる'}]); return;}
+      m.pw=v;
       save(); renderMemberPage();
+      showModal('変更しました',['パスワードを変更しました。忘れないようにしてください。'],[{label:'閉じる'}]);
     });
   }
   if(e.target.id==='btnPwReset'){
     if(!isAdmin()) return;
-    showPrompt('🔑 パスワードのリセット（管理者）',[m.name+'さんの新しいパスワードを入力してください。','空のまま OK でパスワードなしになります。'],function(v){
+    showPrompt('🔑 パスワードのリセット（管理者）',[m.name+'さんのパスワードをリセットします。','空のまま OK にすると「未設定」に戻り、本人が次のログイン時に自分で設定します（推奨）。'],function(v){
+      if(v){
+        var err=pwCheck(v,m.name);
+        if(err){showModal('エラー',[err+'。リセットを中止しました。'],[{label:'閉じる'}]); return;}
+      }
       m.pw=v||'';
       save(); renderMemberPage();
-      showModal('リセットしました',[m.name+'さんのパスワードを'+(v?'再設定しました。本人に伝えてください。':'解除しました（空欄でログインできます）。')],[{label:'閉じる'}]);
+      showModal('リセットしました',[m.name+'さんのパスワードを'+(v?'再設定しました。本人に伝えてください。':'未設定に戻しました。本人が次のログイン時に設定します。')],[{label:'閉じる'}]);
     });
   }
 });

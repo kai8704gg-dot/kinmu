@@ -536,9 +536,10 @@
     <div class="settings-row">
       <button id="btnExport">📤 エクスポート（書き出し）</button>
       <button id="btnImport">📥 インポート（読み込み）</button>
+      <button id="btnBak">🛟 同期前スナップショットを書き出す</button>
       <input type="file" id="importFile" accept=".json" style="display:none">
     </div>
-    <div class="info-line">別のパソコンへの引き継ぎ・バックアップに使います。インポートすると現在の全データが置き換わります。</div>
+    <div class="info-line">別のパソコンへの引き継ぎ・バックアップに使います。インポートすると現在の全データが置き換わります（クラウドにも反映）。🛟はこの端末がクラウドと同期する直前のデータの控えで、誤って上書きされたときの復旧に使えます（書き出してインポートすると戻せます）。</div>
   </div>
 </div>
 
@@ -578,7 +579,7 @@
 <script>
 (function(){
 'use strict';
-var APP_VER='2026.07.06-a';
+var APP_VER='2026.07.06-b';
 var EMBEDDED_CFG=null; /*__EMBED__*/
 var STORAGE_KEY='kinmu-maker-v2';
 var WD=['日','月','火','水','木','金','土'];
@@ -845,10 +846,24 @@ function startCloud(){
         return db.doc(cloudBase()+'/meta/core').get();
       }).then(function(snap){
         if(!snap.exists){
-          // クラウド側が空: この端末のデータを初回アップロード
-          setCloudStatus('ok','同期中');
-          pushed={core:'',months:{},wishes:{}};
-          cloudPush();
+          // クラウド側が空: 病棟IDの打ち間違いで空の箱を作ってしまう事故を防ぐため確認する
+          setCloudStatus('auth','初回アップロードの確認待ち');
+          showModal('☁ はじめての接続です',[
+            '病棟ID「'+loc.cloud.wardId+'」のクラウドには、まだデータがありません。',
+            'この端末の現在のデータを最初のデータとしてアップロードして開始します。',
+            '⚠ すでに運用中のはずなのにこの画面が出た場合は、病棟IDの入力間違いの可能性が高いです。「やめる」を押して、正しい病棟IDを確認してください。'
+          ],[
+            {label:'やめる（接続しない）',fn:function(){
+              setCloudStatus('error','病棟IDを確認してください（今回は接続していません）');
+            }},
+            {label:'アップロードして開始',primary:true,fn:function(){
+              setCloudStatus('ok','同期中');
+              pushed={core:'',months:{},wishes:{}};
+              cloudPush();
+              attachCloud();
+            }}
+          ]);
+          return;
         }
         attachCloud();
       }).catch(function(e){
@@ -861,8 +876,17 @@ function startCloud(){
 }
 function attachCloud(){
   var b=cloudBase();
+  var bakDone=false;
   db.doc(b+'/meta/core').onSnapshot(function(snap){
     if(!snap.exists) return;
+    // クラウドの内容で上書きする前に、この端末のデータをスナップショット保存（復旧用）
+    if(!bakDone){
+      bakDone=true;
+      try{
+        var cur=localStorage.getItem(STORAGE_KEY);
+        if(cur) localStorage.setItem(STORAGE_KEY+'-bak',JSON.stringify({t:Date.now(),data:cur}));
+      }catch(e){}
+    }
     var c=snap.data()||{};
     if(c.members) state.members=c.members;
     if(c.nextId) state.nextId=c.nextId;
@@ -2546,6 +2570,23 @@ document.getElementById('btnExport').addEventListener('click',exportData);
 document.getElementById('btnImport').addEventListener('click',function(){
   if(!canEdit()) return;
   document.getElementById('importFile').click();
+});
+document.getElementById('btnBak').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  var b=localStorage.getItem(STORAGE_KEY+'-bak');
+  if(!b){
+    showModal('スナップショットなし',['この端末には同期前のスナップショットが保存されていません。'],[{label:'閉じる'}]);
+    return;
+  }
+  try{
+    var o=JSON.parse(b);
+    var d=new Date(o.t);
+    var stamp=d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'_'+('0'+d.getHours()).slice(-2)+('0'+d.getMinutes()).slice(-2);
+    download(new Blob([o.data],{type:'application/json'}),'同期前スナップショット_'+stamp+'.json');
+    showModal('書き出しました',['保存日時: '+d.toLocaleString('ja-JP'),'このファイルを「📥インポート」で読み込むと、その時点のデータに戻せます（クラウドにも反映されます）。'],[{label:'閉じる'}]);
+  }catch(e){
+    showModal('エラー',['スナップショットを読み取れませんでした。'],[{label:'閉じる'}]);
+  }
 });
 document.getElementById('importFile').addEventListener('change',function(){
   if(this.files&&this.files[0]) importData(this.files[0]);

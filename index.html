@@ -224,7 +224,7 @@
     <h2>🏥 看護師勤務表メーカー</h2>
     <p class="sub">ユーザーを選んでログインしてください</p>
     <select id="loginUser"></select>
-    <input type="password" id="loginPw" placeholder="パスワード（未設定なら空欄のまま）">
+    <input type="password" id="loginPw" placeholder="パスワード">
     <button class="primary" id="btnLogin">ログイン</button>
     <div class="login-err" id="loginErr"></div>
     <div class="login-hint" id="loginCloud" style="font-weight:bold"></div>
@@ -579,8 +579,8 @@
 <script>
 (function(){
 'use strict';
-var APP_VER='2026.07.06-b';
-var EMBEDDED_CFG={"apiKey":"AIzaSyB5qkoUPa7nsNkpQkFJkxR7TPXNFXUdaHM","authDomain":"kinmuhyou-10ba8.firebaseapp.com","projectId":"kinmuhyou-10ba8","wardId":"idai-seikei-test-hanawa"}; /*__EMBED__*/
+var APP_VER='2026.07.06-c';
+var EMBEDDED_CFG=null; /*__EMBED__*/
 var STORAGE_KEY='kinmu-maker-v2';
 var WD=['日','月','火','水','木','金','土'];
 var SHIFTS={
@@ -1945,6 +1945,9 @@ function renderAll(){
       +state.members.map(function(m){return '<option value="'+m.id+'">'+esc(m.name)+'（'+ROLE_NAME[m.role]+'）</option>';}).join('');
     document.getElementById('loginPw').value='';
     document.getElementById('loginErr').textContent='';
+    document.getElementById('loginPw').placeholder=state.joinPass
+      ?'パスワード（初めての方は初期パスワード）'
+      :'パスワード（未設定なら空欄のまま）';
     document.getElementById('loginHint').textContent=state.joinPass
       ?'はじめての方は、師長・管理者から受け取った「初期パスワード」でログインすると、自分のパスワードを設定できます。'
       :'はじめての方はパスワード欄を空のままログインすると、その場でパスワードを設定します（8文字以上・英字と数字を含む）。';

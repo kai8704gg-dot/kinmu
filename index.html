@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
 <title>看護師勤務表メーカー</title>
 <style>
   :root{
@@ -227,7 +228,7 @@
     <button class="primary" id="btnLogin">ログイン</button>
     <div class="login-err" id="loginErr"></div>
     <div class="login-hint" id="loginCloud" style="font-weight:bold"></div>
-    <div class="login-hint">はじめての方はパスワード欄を空のままログインすると、その場でパスワードを設定します（8文字以上・英字と数字を含む）。</div>
+    <div class="login-hint" id="loginHint"></div>
     <div class="login-hint" id="verLine" style="text-align:right;color:#b0bec5"></div>
     <button id="btnCfgPaste" style="margin-top:10px;font-size:12px;padding:6px">☁ 接続コードで接続（管理者から受け取った方）</button>
   </div>
@@ -328,7 +329,8 @@
       <tr><td>副師長・一般職員</td><td>勤務表の閲覧・CSV/印刷・マイページで自分の希望入力</td></tr>
     </table>
     <ul>
-      <li><b>初回ログイン時にパスワードの設定が必須</b>です（パスワード欄を空のままログインすると設定画面が出ます）。</li>
+      <li><b>初回ログイン</b> — 師長・管理者から受け取った「初期パスワード」でログインすると、その場で自分のパスワードを設定します（設定するまで入れません）。</li>
+      <li data-m="a"><b>初期パスワード（重要）</b> — ⚙認証設定で必ず設定してください。未設定だと、URLを知っている第三者が未登録アカウントに先にパスワードを付けて乗っ取れてしまいます。</li>
       <li>パスワードは8文字以上で英字と数字を含むもの。推測されやすいもの・名前入りは使えません。</li>
       <li>忘れた場合は、管理者にリセットを依頼してください（未設定に戻り、次回ログイン時に再設定します）。</li>
       <li data-m="a"><b>2段階認証（管理者・推奨）</b> — ⚙設定の「🛡2段階認証を有効にする」で、スマホの認証アプリ（Google認証システムなど）の6桁コードをログインに追加できます。</li>
@@ -451,6 +453,7 @@
       <li>※ 病棟IDと設定値を知っている人はデータにアクセスできます。IDは長めの文字列にし、部外者に教えないでください。</li>
     </ul>
     <p><b>URLで開けるようにする（おすすめ）:</b> 手順書のSTEP 7のとおり無料のGitHub PagesにこのHTMLを公開すると、各自がURLを開くだけで使えます。さらに管理者が⚙設定の「🔗共有用リンクをコピー」で作ったリンクを配れば、<b>開くだけで接続設定まで完了</b>します（職員は自分のユーザーでログインするだけ）。</p>
+    <p><b>設定埋め込み版（さらにおすすめ）:</b> 接続済みの状態で⚙設定の「📦設定埋め込み版HTMLを書き出す」を押し、できた index.html をGitHubに上書きすると、以後は<b>普通のURLを開くだけで全端末が自動接続</b>されます。リンク・コードの配布は不要になり、履歴やキャッシュを消しても開き直せば再接続されます。※URLを知っている人が接続できるようになるため、URLは部外者に教えないでください。</p>
   </div>
   <div class="panel">
     <h3>データの保存と引き継ぎ</h3>
@@ -506,6 +509,10 @@
       <button id="btnTotp"></button>
       <span id="totpInfo" style="font-size:12px;color:#64748b"></span>
     </div>
+    <div class="settings-row">
+      <button id="btnJoinPass"></button>
+      <span id="joinInfo" style="font-size:12px;color:#64748b"></span>
+    </div>
   </div>
   <div class="panel" id="cloudRow">
     <h3>☁ クラウド同期（全端末でデータを共有）</h3>
@@ -519,9 +526,10 @@
     <div class="settings-row">
       <button id="btnCloudSave" class="primary">保存して接続</button>
       <button id="btnCloudLink">🔗 共有用リンクをコピー</button>
+      <button id="btnCloudEmbed">📦 設定埋め込み版HTMLを書き出す</button>
       <button id="btnCloudOff" class="danger">同期を解除（この端末のみ）</button>
     </div>
-    <div class="info-line">値は伏せ字で表示されます（📋でコピーできます）。設定手順は「📖使い方」の「クラウド同期」を参照。</div>
+    <div class="info-line">値は伏せ字で表示されます（📋でコピーできます）。「設定埋め込み版」をGitHubに上げると、どの端末もURLを開くだけで接続されます（履歴削除にも強くなります）。設定手順は「📖使い方」の「クラウド同期」を参照。</div>
   </div>
   <div class="panel" id="dataRow">
     <h3>💾 データ管理</h3>
@@ -570,7 +578,8 @@
 <script>
 (function(){
 'use strict';
-var APP_VER='2026.07.05-a';
+var APP_VER='2026.07.06-a';
+var EMBEDDED_CFG=null; /*__EMBED__*/
 var STORAGE_KEY='kinmu-maker-v2';
 var WD=['日','月','火','水','木','金','土'];
 var SHIFTS={
@@ -641,7 +650,7 @@ function defaultState(){
     members:sampleMembers(), nextId:31,
     schedules:{}, wishes:{},
     settings:{offDays:8,nightSize:4,nightCap:5,startDay:1,roleColors:defaultRoleColors(),rules:defaultRules(),customRules:[]},
-    adminPass:'', adminTotp:null
+    adminPass:'', adminTotp:null, joinPass:''
   };
 }
 // この端末だけの設定（ログイン状態・表示中の月・クラウド接続情報）
@@ -671,6 +680,7 @@ function normalize(st){
   delete st.editPass;
   if(!st.settings.customRules) st.settings.customRules=[];
   if(st.adminTotp===undefined) st.adminTotp=null;
+  if(st.joinPass===undefined) st.joinPass='';
   return st;
 }
 function load(){
@@ -749,6 +759,8 @@ function applyCfg(c){
   applyCfg(cfgDecode(raw));
   try{history.replaceState(null,'',location.pathname);}catch(e){}
 })();
+// HTMLに埋め込まれた接続設定（埋め込み版）: 端末に設定がなければ自動適用
+if(!loc.cloud&&EMBEDDED_CFG) applyCfg(EMBEDDED_CFG);
 
 /* ---------- クラウド同期（Firebase / 無料プラン） ----------
    loc.cloud={apiKey,authDomain,projectId,wardId} を設定すると有効。
@@ -857,9 +869,10 @@ function attachCloud(){
     if(c.settings) state.settings=c.settings;
     if(c.adminPass!==undefined) state.adminPass=c.adminPass;
     if(c.adminTotp!==undefined) state.adminTotp=c.adminTotp;
+    if(c.joinPass!==undefined) state.joinPass=c.joinPass;
     normalize(state);
     if(loc.session&&loc.session.type==='member'&&!state.members.some(function(m){return m.id===loc.session.mid;})) loc.session=null;
-    pushed.core=JSON.stringify({members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass,adminTotp:state.adminTotp});
+    pushed.core=JSON.stringify({members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass,adminTotp:state.adminTotp,joinPass:state.joinPass});
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
     localStorage.setItem(LOCAL_KEY,JSON.stringify(loc));
     setCloudStatus('ok');
@@ -895,7 +908,7 @@ function cloudPush(){
   var onErr=function(e){setCloudStatus('error','保存を送信できません: '+((e&&e.message)||e));};
   try{
     var b=cloudBase();
-    var core={members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass,adminTotp:state.adminTotp};
+    var core={members:state.members,nextId:state.nextId,settings:state.settings,adminPass:state.adminPass,adminTotp:state.adminTotp,joinPass:state.joinPass};
     var cs=JSON.stringify(core);
     if(cs!==pushed.core){
       pushed.core=cs;
@@ -1908,6 +1921,9 @@ function renderAll(){
       +state.members.map(function(m){return '<option value="'+m.id+'">'+esc(m.name)+'（'+ROLE_NAME[m.role]+'）</option>';}).join('');
     document.getElementById('loginPw').value='';
     document.getElementById('loginErr').textContent='';
+    document.getElementById('loginHint').textContent=state.joinPass
+      ?'はじめての方は、師長・管理者から受け取った「初期パスワード」でログインすると、自分のパスワードを設定できます。'
+      :'はじめての方はパスワード欄を空のままログインすると、その場でパスワードを設定します（8文字以上・英字と数字を含む）。';
   }
   document.getElementById('monthLabel').textContent=periodLabel();
   document.getElementById('printTitle').textContent='勤務表　'+periodLabel();
@@ -1964,6 +1980,10 @@ function renderAll(){
   var totpOn=!!(state.adminTotp&&state.adminTotp.on);
   document.getElementById('btnTotp').textContent=totpOn?'🛡 2段階認証を無効にする':'🛡 2段階認証を有効にする';
   document.getElementById('totpInfo').textContent=totpOn?'有効（ログインに認証アプリの6桁コードが必要）':'無効（有効化を推奨）';
+  document.getElementById('btnJoinPass').textContent=state.joinPass?'🎫 初期パスワードの変更・解除':'🎫 初期パスワードを設定';
+  document.getElementById('joinInfo').textContent=state.joinPass
+    ?'設定済み（職員の初回ログインにこの合言葉が必要。師長から口頭で伝えてください）'
+    :'⚠ 未設定: URLを知っている人が未登録アカウントを乗っ取れます。必ず設定してください';
   document.getElementById('cloudRow').style.display=isAdmin()?'':'none';
   if(isAdmin()){
     var cc=loc.cloud||{};
@@ -2215,7 +2235,15 @@ document.getElementById('btnLogin').addEventListener('click',function(){
   var m=state.members.filter(function(x){return x.id===v;})[0];
   if(!m){errEl.textContent='ユーザーを選んでください。'; return;}
   if(!m.pw){
-    if(pw!==''){errEl.textContent='初回はパスワード欄を空のままログインし、その場で設定します。'; return;}
+    if(state.joinPass){
+      // 初期パスワード必須（第三者による初回登録・乗っ取りを防止）
+      if(pw!==state.joinPass){
+        errEl.textContent='初回ログインには「初期パスワード」が必要です（師長・管理者から受け取ってください）。';
+        return;
+      }
+    }else{
+      if(pw!==''){errEl.textContent='初回はパスワード欄を空のままログインし、その場で設定します。'; return;}
+    }
     forcePwSetup(m.name+'さん',function(val){
       m.pw=val;
       loc.session={type:'member',mid:m.id};
@@ -2307,6 +2335,30 @@ document.getElementById('btnAdminPw').addEventListener('click',function(){
   if(!isAdmin()) return;
   changeAdminPw();
 });
+document.getElementById('btnJoinPass').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  showPrompt('🎫 初期パスワードの設定',[
+    '職員がはじめてログインするときに入力する合言葉です（4文字以上）。',
+    '設定すると、この合言葉を知らない人は未登録アカウントにログインできなくなります。',
+    '空のまま OK にすると解除します（安全のため非推奨）。'
+  ],function(v){
+    if(v&&v.length<4){
+      showModal('エラー',['初期パスワードは4文字以上にしてください。'],[{label:'閉じる'}]);
+      return;
+    }
+    if(!v){
+      showModal('確認',['初期パスワードを解除すると、URLを知っている人が未登録アカウントを乗っ取れる状態に戻ります。'],
+        [{label:'やめる'},{label:'解除する',primary:true,fn:function(){
+          state.joinPass='';
+          save(); renderAll();
+        }}]);
+      return;
+    }
+    state.joinPass=v;
+    save(); renderAll();
+    showModal('設定しました',['初期パスワード: '+v,'新しく登録する職員には、この合言葉を口頭など安全な方法で伝えてください。'],[{label:'閉じる'}]);
+  });
+});
 document.getElementById('btnTotp').addEventListener('click',function(){
   if(!isAdmin()) return;
   if(state.adminTotp&&state.adminTotp.on){
@@ -2370,6 +2422,41 @@ document.getElementById('btnCloudLink').addEventListener('click',function(){
     {label:'接続コードをコピー',fn:function(){copyText(code);}},
     {label:'リンクをコピー',primary:true,fn:function(){copyText(url);}}
   ]);
+});
+// 設定埋め込み版HTMLの書き出し（URLを開くだけで接続される公開用ファイル）
+document.getElementById('btnCloudEmbed').addEventListener('click',function(){
+  if(!isAdmin()) return;
+  if(!cloudConfigured()){
+    showModal('書き出せません',['先に「保存して接続」でクラウド同期を設定してください。'],[{label:'閉じる'}]);
+    return;
+  }
+  if(location.protocol==='file:'){
+    showModal('書き出せません',['この機能はWebに公開したURLで開いているときに使えます。','（公開前は「共有リンク」または「接続コード」をお使いください）'],[{label:'閉じる'}]);
+    return;
+  }
+  fetch(location.pathname).then(function(r){
+    if(!r.ok) throw new Error('read failed');
+    return r.text();
+  }).then(function(html){
+    var cfg={apiKey:loc.cloud.apiKey,authDomain:loc.cloud.authDomain,projectId:loc.cloud.projectId,wardId:loc.cloud.wardId};
+    var inj='var EMBEDDED_CFG='+JSON.stringify(cfg)+'; /*__EMBED__*/';
+    var marker='var EMBEDDED_CFG=null; /*__EMBED__*/';
+    var out;
+    if(html.indexOf(marker)>=0){
+      out=html.replace(marker,inj);
+    }else{
+      out=html.replace(/var EMBEDDED_CFG=\{[^;]*\}; \/\*__EMBED__\*\//,inj);
+    }
+    if(out.indexOf(inj)<0) throw new Error('marker not found');
+    download(new Blob([out],{type:'text/html'}),'index.html');
+    showModal('📦 書き出しました',[
+      'ダウンロードされた index.html をそのままGitHubに上書きアップロードしてください（改名不要）。',
+      '反映後は、どの端末もURLを開くだけで接続済みになります（履歴・キャッシュを消しても、開き直せば再接続されます）。',
+      '※ 以後「URLを知っている人＝接続できる人」になります。URLは病棟のメンバー以外に教えないでください。'
+    ],[{label:'閉じる'}]);
+  }).catch(function(e){
+    showModal('エラー',['書き出しに失敗しました: '+((e&&e.message)||e)],[{label:'閉じる'}]);
+  });
 });
 document.getElementById('btnCloudOff').addEventListener('click',function(){
   if(!isAdmin()) return;
